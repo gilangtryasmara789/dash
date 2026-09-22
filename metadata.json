@@ -1,0 +1,6 @@
+{
+  "name": "Dashboard PM Sarana LV",
+  "description": "Dashboard pemantauan PM Check mingguan, Commissioning, dan Fuel Expiry sarana Light Vehicle (LV) Coal Mining terintegrasi Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
