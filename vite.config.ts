@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/dash/', // <-- ini kunci biar bisa kebuka di github.io/dash/
+    base: '/', // <-- ini kunci biar bisa kebuka di github.io/dash/
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
