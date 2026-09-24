@@ -1,6 +1,6 @@
 import React from 'react';
 import { SaranaLV } from '../types';
-import { ShieldAlert, CheckCircle, Wrench, CalendarDays } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 
 interface WeeklyPmReportCardProps {
   vehicles: SaranaLV[];
@@ -9,51 +9,78 @@ interface WeeklyPmReportCardProps {
 export const WeeklyPmReportCard: React.FC<WeeklyPmReportCardProps> = ({ vehicles }) => {
   const totalVehicles = vehicles.length;
 
-  // In weekly mandatory PM, check who has completed PM this current week / within last 7 days
+  // Real-time current date
+  const now = new Date();
+
+  // Find Monday (00:00:00) and Sunday (23:59:59.999) of the current week
+  // Sunday = 0, Monday = 1, Tuesday = 2, ..., Saturday = 6
+  const currentDay = now.getDay();
+  const diffToMonday = (currentDay + 6) % 7; // days back to Monday
+
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  // Month names for English display
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  const weekLabel = `${monthNames[monday.getMonth()]} ${monday.getDate()} – ${monthNames[sunday.getMonth()]} ${sunday.getDate()}, ${sunday.getFullYear()}`;
+
+  // Check which units have completed PM during the CURRENT week (Mon 00:00 to Sun 23:59)
+  // Every Monday, this automatically resets to 0% because previous week's dates are prior to Monday
   const completedCount = vehicles.filter((v) => {
-    // If pmStatus is DONE or if lastPmDate was within last 7 days
-    if (v.pmStatus === 'DONE') return true;
-    if (!v.lastPmDate) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lastPm = new Date(v.lastPmDate);
-    lastPm.setHours(0, 0, 0, 0);
-    const diffDays = Math.round((today.getTime() - lastPm.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays >= 0 && diffDays <= 7 && v.pmStatus !== 'OVERDUE';
+    if (v.pmStatus === 'OVERDUE') return false;
+
+    const dateStr = v.pmDoneDate || v.lastPmDate;
+    if (!dateStr) return false;
+
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return false;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) return false;
+
+    // Use noon local time to avoid timezone boundary issues
+    const pmDate = new Date(y, m, d, 12, 0, 0);
+    return pmDate.getTime() >= monday.getTime() && pmDate.getTime() <= sunday.getTime();
   }).length;
 
-  const pendingCount = totalVehicles - completedCount;
+  const pendingCount = Math.max(0, totalVehicles - completedCount);
   const compliancePercentage = totalVehicles > 0 ? Math.round((completedCount / totalVehicles) * 100) : 0;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 mb-6 shadow-xs">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Left: Section Header & Description */}
+        {/* Left: Section Header & Period (Clean Minimalist) */}
         <div>
           <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase block mb-1">
             WEEKLY PM REPORT
           </span>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <span>PM compliance this week</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-              Wajib 7 Hari Sekali
-            </span>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            PM compliance this week
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 max-w-lg">
-            Summary of units that have and haven't completed PM check this week.
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+            Period: <span className="font-semibold text-slate-800">{weekLabel}</span>
           </p>
         </div>
 
-        {/* Right: Metrics Numbers */}
+        {/* Right: Metrics Numbers (Crisp Black Styling) */}
         <div className="flex items-center gap-6 sm:gap-8 self-start md:self-center">
           {/* Unit Completed */}
           <div className="text-left sm:text-right">
-            <div className="text-xl sm:text-2xl font-extrabold text-slate-900">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {completedCount}
               <span className="text-slate-400 font-semibold text-base sm:text-lg">/{totalVehicles}</span>
             </div>
             <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-              UNIT COMPLETED
+              UNITS CLEARED
             </div>
           </div>
 
@@ -61,7 +88,7 @@ export const WeeklyPmReportCard: React.FC<WeeklyPmReportCardProps> = ({ vehicles
 
           {/* Pending PM */}
           <div className="text-left sm:text-right">
-            <div className={`text-xl sm:text-2xl font-extrabold ${pendingCount > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {pendingCount}
             </div>
             <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
@@ -73,7 +100,7 @@ export const WeeklyPmReportCard: React.FC<WeeklyPmReportCardProps> = ({ vehicles
 
           {/* Compliance Percentage */}
           <div className="text-left sm:text-right">
-            <div className={`text-xl sm:text-2xl font-extrabold ${compliancePercentage >= 80 ? 'text-emerald-600' : compliancePercentage > 0 ? 'text-blue-600' : 'text-slate-500'}`}>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {compliancePercentage}%
             </div>
             <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
@@ -83,15 +110,15 @@ export const WeeklyPmReportCard: React.FC<WeeklyPmReportCardProps> = ({ vehicles
         </div>
       </div>
 
-      {/* Progress Bar & Schedule Indicator */}
+      {/* Progress Bar & Schedule Indicator in Clean Professional English */}
       <div className="mt-4 pt-4 border-t border-slate-100">
-        <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5 font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-slate-500 mb-1.5 font-medium">
           <span className="flex items-center gap-1.5">
-            <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
-            <span>Target Kepatuhan Siklus Mingguan: 100% Seluruh Sarana LV</span>
+            <CalendarDays className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span>Weekly inspection compliance target: 100% Light Vehicle Fleet</span>
           </span>
           <span className="font-semibold text-slate-700">
-            {completedCount} dari {totalVehicles} unit selesai diinspeksi
+            {completedCount} of {totalVehicles} units cleared this week
           </span>
         </div>
 
@@ -103,7 +130,7 @@ export const WeeklyPmReportCard: React.FC<WeeklyPmReportCardProps> = ({ vehicles
                 : compliancePercentage > 50
                 ? 'bg-blue-500'
                 : compliancePercentage > 0
-                ? 'bg-amber-500'
+                ? 'bg-blue-600'
                 : 'bg-slate-300'
             }`}
             style={{ width: `${Math.max(compliancePercentage, 2)}%` }}

@@ -26,12 +26,13 @@ interface ObligationsRegisterProps {
   pmCount: number;
   commCount: number;
   fuelCount: number;
+  completedCount?: number;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   selectedType: 'ALL' | ObligationType;
   onSelectType: (type: 'ALL' | ObligationType) => void;
-  selectedStatusTab: 'ALL' | 'OVERDUE' | 'TODAY' | 'TOMORROW' | 'UPCOMING';
-  onSelectStatusTab: (tab: 'ALL' | 'OVERDUE' | 'TODAY' | 'TOMORROW' | 'UPCOMING') => void;
+  selectedStatusTab: 'ALL' | 'OVERDUE' | 'TODAY' | 'TOMORROW' | 'UPCOMING' | 'COMPLETED';
+  onSelectStatusTab: (tab: 'ALL' | 'OVERDUE' | 'TODAY' | 'TOMORROW' | 'UPCOMING' | 'COMPLETED') => void;
   onConfirmObligation: (item: VehicleObligationItem) => void;
   onViewVehicleDetail: (vehicle: SaranaLV) => void;
 }
@@ -42,6 +43,7 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
   pmCount,
   commCount,
   fuelCount,
+  completedCount = 0,
   searchQuery,
   onSearchChange,
   selectedType,
@@ -165,7 +167,7 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
           </button>
         </div>
 
-        {/* Subtabs matching user screenshot */}
+        {/* Subtabs matching user screenshot with Completed tab */}
         <div className="flex items-center gap-4 text-xs font-semibold border-b sm:border-b-0 border-slate-200 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
           {[
             { id: 'ALL', label: 'All reminders' },
@@ -173,6 +175,7 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
             { id: 'TODAY', label: 'Today' },
             { id: 'TOMORROW', label: 'Tomorrow' },
             { id: 'UPCOMING', label: 'Upcoming' },
+            { id: 'COMPLETED', label: `Completed (${completedCount})` },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -213,10 +216,10 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
                   <div className="flex flex-col items-center justify-center gap-2">
                     <CheckCircle2 className="w-8 h-8 text-slate-300" />
                     <span className="font-semibold text-slate-600 text-sm">
-                      Tidak ada kewajiban unit yang sesuai filter
+                      No vehicle obligations matching current filter
                     </span>
                     <span className="text-xs text-slate-400">
-                      Coba ganti kata kunci pencarian atau tab filter di atas
+                      Try adjusting your search query or switching active filter tabs above
                     </span>
                   </div>
                 </td>
@@ -238,7 +241,7 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
                           type="button"
                           onClick={() => onViewVehicleDetail(item.vehicle)}
                           className="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors shrink-0 cursor-pointer"
-                          title="Lihat Detail Sarana LV"
+                          title="View Vehicle Asset Details"
                         >
                           <Truck className="w-4 h-4" />
                         </button>

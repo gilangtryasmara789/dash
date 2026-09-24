@@ -35,19 +35,19 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-18">
-          {/* Left: KPC Logo & System Name & Live Badge */}
-          <div className="flex items-center gap-3 sm:gap-5">
+          {/* Left: KPC Logo, System Name & Live Badge */}
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* KPC Brand */}
-            <div className="h-9 sm:h-11 flex items-center">
+            <div className="h-9 sm:h-11 flex items-center shrink-0">
               <KpcLogo className="h-8 sm:h-10" />
             </div>
 
             {/* Title Separator */}
             <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="hidden sm:flex items-center gap-2.5">
               <span className="text-sm sm:text-base font-semibold text-slate-800 tracking-tight">
-                Coal Mining · LV Control
+                Coal Mining · LV Fleet Operations
               </span>
 
               {/* Live Monitoring Badge as in user's screenshot */}
@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <span className="text-[10px] text-slate-400 block leading-tight font-medium">Sheets</span>
                   <span className="font-semibold text-slate-800 block truncate">
-                    {config.spreadsheetName || 'Monitoring PM LV'}
+                    {config.spreadsheetName || 'LV Fleet Register'}
                   </span>
                 </button>
                 <a
@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-1 text-slate-400 hover:text-emerald-700 rounded transition-colors"
-                  title="Buka Spreadsheet"
+                  title="Open Spreadsheet in New Tab"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
@@ -92,33 +92,26 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={onRefresh}
                   disabled={isSyncing}
                   className="p-1 text-slate-400 hover:text-slate-800 rounded transition-colors cursor-pointer"
-                  title="Sinkronkan"
+                  title="Sync with Sheets"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-600' : ''}`} />
                 </button>
               </div>
-            ) : (
+            ) : null}
+
+            {/* Add Vehicle Button: HANYA MUNCUL JIKA SUDAH LOGIN ADMIN */}
+            {isAdmin && (
               <button
                 type="button"
-                id="header-connect-sheet-btn"
-                onClick={onOpenSheetModal}
-                className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-colors cursor-pointer"
+                id="header-add-vehicle-btn"
+                onClick={onOpenAddVehicle}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors shadow-xs cursor-pointer animate-in fade-in"
+                title="Register New Vehicle Asset (Admin Only)"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Google Sheet</span>
+                <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Add</span> Vehicle
               </button>
             )}
-
-            {/* Add Vehicle Button (Admin / Supervisor) */}
-            <button
-              type="button"
-              id="header-add-vehicle-btn"
-              onClick={onOpenAddVehicle}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors shadow-xs cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">Tambah</span> Unit
-            </button>
 
             {/* Admin Login Button matching screenshot */}
             <button
@@ -127,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onOpenAdminModal}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer shadow-xs ${
                 isAdmin
-                  ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 ring-2 ring-rose-200/50'
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >

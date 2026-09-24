@@ -3,14 +3,16 @@ import React, { useState } from 'react';
 interface KpcLogoProps {
   className?: string;
   showSubtext?: boolean;
+  src?: string;
 }
 
 export const KpcLogo: React.FC<KpcLogoProps> = ({
   className = 'h-9 sm:h-10',
   showSubtext = true,
+  src = 'https://www.kpc.co.id/wp-content/uploads/2025/12/Logo_KPC.png',
 }) => {
   const [imageError, setImageError] = useState(false);
-  const logoUrl = 'https://www.kpc.co.id/wp-content/uploads/2025/12/Logo_KPC.png';
+  const logoUrl = src;
 
   if (!imageError) {
     return (

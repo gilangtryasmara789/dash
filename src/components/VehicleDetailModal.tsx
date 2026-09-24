@@ -16,22 +16,27 @@ import {
   Fuel,
   CheckCircle2,
   Edit,
+  Trash2,
 } from 'lucide-react';
 
 interface VehicleDetailModalProps {
   vehicle: SaranaLV | null;
   isOpen: boolean;
+  isAdmin?: boolean;
   onClose: () => void;
   onOpenConfirmObligation: (item: VehicleObligationItem) => void;
   onEditVehicle: (vehicle: SaranaLV) => void;
+  onRequestDelete?: (vehicle: SaranaLV) => void;
 }
 
 export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
   vehicle,
   isOpen,
+  isAdmin,
   onClose,
   onOpenConfirmObligation,
   onEditVehicle,
+  onRequestDelete,
 }) => {
   if (!isOpen || !vehicle) return null;
 
@@ -78,7 +83,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl">
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">
-                Driver / PIC
+                Designated Operator / PIC
               </span>
               <span className="font-bold text-slate-800 text-xs flex items-center gap-1">
                 <User className="w-3.5 h-3.5 text-slate-400" />
@@ -87,7 +92,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             </div>
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">
-                Lokasi Operasi
+                Operating Location / Pit
               </span>
               <span className="font-semibold text-slate-700 text-xs flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
@@ -96,11 +101,11 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
             </div>
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">
-                Odometer (KM/HM)
+                Current Odometer
               </span>
               <span className="font-semibold text-slate-700 text-xs flex items-center gap-1">
                 <Gauge className="w-3.5 h-3.5 text-slate-400" />
-                {vehicle.currentKmHm.toLocaleString('id-ID')} KM
+                {vehicle.currentKmHm.toLocaleString('en-US')} KM
               </span>
             </div>
           </div>
@@ -108,7 +113,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           {/* 3 Obligations Status Cards */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              Status 3 Kewajiban Utama Sarana LV
+              Fleet Compliance & Obligation Matrix
             </h4>
 
             {/* 1. PM Check Card */}
@@ -120,7 +125,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-800 text-xs sm:text-sm">
-                      PM Check (Wajib 7 Hari)
+                      PM Inspection (7-Day Cycle)
                     </span>
                     <span
                       className={`text-[10px] font-bold px-2 py-0.2 rounded-md border ${
@@ -133,7 +138,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">
-                    Terakhir: {formatFriendlyDate(vehicle.lastPmDate)} · Jatuh tempo:{' '}
+                    Last: {formatFriendlyDate(vehicle.lastPmDate)} · Next Due:{' '}
                     <span className="font-semibold text-slate-700">
                       {formatFriendlyDate(vehicle.nextPmDueDate)}
                     </span>
@@ -166,7 +171,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   }}
                   className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
                 >
-                  {vehicle.pmStatus === 'DONE' ? '✓ Sudah PM' : 'Update PM'}
+                  {vehicle.pmStatus === 'DONE' ? '✓ PM Done' : 'Record PM'}
                 </button>
               </div>
             </div>
@@ -180,7 +185,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-800 text-xs sm:text-sm">
-                      Commissioning KPC
+                      KPC Commissioning Safety Pass
                     </span>
                     <span
                       className={`text-[10px] font-bold px-2 py-0.2 rounded-md border ${
@@ -193,7 +198,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">
-                    Sertifikat: {vehicle.commissioningCertificateNo || '-'} · Berlaku s/d:{' '}
+                    Cert: {vehicle.commissioningCertificateNo || '-'} · Valid Through:{' '}
                     <span className="font-semibold text-slate-700">
                       {formatFriendlyDate(vehicle.commissioningDueDate)}
                     </span>
@@ -226,7 +231,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   }}
                   className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
                 >
-                  {vehicle.commissioningStatus === 'DONE' ? '✓ Valid' : 'Update Comm'}
+                  {vehicle.commissioningStatus === 'DONE' ? '✓ Certified' : 'Renew Clearance'}
                 </button>
               </div>
             </div>
@@ -240,7 +245,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-800 text-xs sm:text-sm">
-                      Fuel Expiry (Kupon BBM)
+                      Fuel Expiry & Allocation
                     </span>
                     <span
                       className={`text-[10px] font-bold px-2 py-0.2 rounded-md border ${
@@ -253,7 +258,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-0.5">
-                    Alokasi: {vehicle.fuelQuota || '250 L/Bulan'} · Jatuh tempo:{' '}
+                    Quota: {vehicle.fuelQuota || '250 L / Month'} · Expiry:{' '}
                     <span className="font-semibold text-slate-700">
                       {formatFriendlyDate(vehicle.fuelDueDate)}
                     </span>
@@ -286,7 +291,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
                   }}
                   className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
                 >
-                  {vehicle.fuelStatus === 'DONE' ? '✓ Kupon Aktif' : 'Update BBM'}
+                  {vehicle.fuelStatus === 'DONE' ? '✓ Voucher Active' : 'Renew Voucher'}
                 </button>
               </div>
             </div>
@@ -296,7 +301,7 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
           {vehicle.catatan && (
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-600">
               <span className="font-bold text-slate-800 block mb-0.5 text-[11px]">
-                Catatan Lapangan:
+                Field Remarks & Logs:
               </span>
               <p className="text-xs">{vehicle.catatan}</p>
             </div>
@@ -304,24 +309,40 @@ export const VehicleDetailModal: React.FC<VehicleDetailModalProps> = ({
 
           {/* Footer Controls */}
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onEditVehicle(vehicle);
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            >
-              <Edit className="w-3.5 h-3.5 text-slate-500" />
-              <span>Edit Data Lengkap</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEditVehicle(vehicle);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                <Edit className="w-3.5 h-3.5 text-slate-500" />
+                <span>Edit Asset Details</span>
+              </button>
+
+              {isAdmin && onRequestDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onRequestDelete(vehicle);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-transparent rounded-xl transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Decommission Vehicle</span>
+                </button>
+              )}
+            </div>
 
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
             >
-              Tutup
+              Close
             </button>
           </div>
         </div>

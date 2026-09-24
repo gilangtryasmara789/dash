@@ -16,6 +16,7 @@ import {
   readDataFromGoogleSheet,
   updateVehicleInGoogleSheet,
   appendVehicleToGoogleSheet,
+  syncAllVehiclesToGoogleSheet,
   flattenVehicleObligations,
 } from './services/googleSheetsService';
 
@@ -28,6 +29,7 @@ import { ConfirmObligationModal } from './components/ConfirmObligationModal';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AddVehicleModal } from './components/AddVehicleModal';
 import { VehicleDetailModal } from './components/VehicleDetailModal';
+import { DeleteVehicleModal } from './components/DeleteVehicleModal';
 import { GoogleSheetConnectModal } from './components/GoogleSheetConnectModal';
 import { VehicleTable } from './components/VehicleTable';
 
@@ -98,7 +100,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<'ALL' | ObligationType>('ALL');
   const [selectedStatusTab, setSelectedStatusTab] = useState<
-    'ALL' | 'OVERDUE' | 'TODAY' | 'TOMORROW' | 'UPCOMING'
+    'ALL' | 'OVERDUE' | 'TODAY' | 'TOMORROW' | 'UPCOMING' | 'COMPLETED'
   >('ALL');
 
   // Modals state
@@ -111,6 +113,9 @@ export default function App() {
 
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailVehicle, setDetailVehicle] = useState<SaranaLV | null>(null);
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<SaranaLV | null>(null);
 
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
 
@@ -140,17 +145,25 @@ export default function App() {
     return flattenVehicleObligations(vehicles);
   }, [vehicles]);
 
-  // Counts for pills
+  // Counts for pills (pending obligations needing action)
   const pmCount = useMemo(() => {
-    return allObligations.filter((o) => o.obligationType === 'PM_CHECK').length;
+    return allObligations.filter((o) => o.obligationType === 'PM_CHECK' && o.status !== 'DONE').length;
   }, [allObligations]);
 
   const commCount = useMemo(() => {
-    return allObligations.filter((o) => o.obligationType === 'COMMISSIONING').length;
+    return allObligations.filter((o) => o.obligationType === 'COMMISSIONING' && o.status !== 'DONE').length;
   }, [allObligations]);
 
   const fuelCount = useMemo(() => {
-    return allObligations.filter((o) => o.obligationType === 'FUEL_EXPIRY').length;
+    return allObligations.filter((o) => o.obligationType === 'FUEL_EXPIRY' && o.status !== 'DONE').length;
+  }, [allObligations]);
+
+  const completedCount = useMemo(() => {
+    return allObligations.filter((o) => o.status === 'DONE').length;
+  }, [allObligations]);
+
+  const allPendingCount = useMemo(() => {
+    return allObligations.filter((o) => o.status !== 'DONE').length;
   }, [allObligations]);
 
   // Filtered obligations
@@ -163,15 +176,30 @@ export default function App() {
 
       // 2. Filter by status tab
       if (selectedStatusTab === 'OVERDUE') {
-        if (item.status !== 'OVERDUE' && (item.status === 'DONE' || item.daysDiff >= 0)) {
+        if (item.status === 'DONE' || item.daysDiff >= 0) {
           return false;
         }
       } else if (selectedStatusTab === 'TODAY') {
-        if (item.daysDiff !== 0) return false;
+        if (item.status === 'DONE' || item.daysDiff !== 0) {
+          return false;
+        }
       } else if (selectedStatusTab === 'TOMORROW') {
-        if (item.daysDiff !== 1) return false;
+        if (item.status === 'DONE' || item.daysDiff !== 1) {
+          return false;
+        }
       } else if (selectedStatusTab === 'UPCOMING') {
-        if (item.daysDiff <= 1 || item.daysDiff > 30) return false;
+        if (item.status === 'DONE' || item.daysDiff <= 1 || item.daysDiff > 30) {
+          return false;
+        }
+      } else if (selectedStatusTab === 'COMPLETED') {
+        if (item.status !== 'DONE') {
+          return false;
+        }
+      } else if (selectedStatusTab === 'ALL') {
+        // In All reminders: completed obligations are cleared and removed from active queue
+        if (item.status === 'DONE') {
+          return false;
+        }
       }
 
       // 3. Search query
@@ -194,7 +222,7 @@ export default function App() {
   // Google OAuth Sign-in Handler
   const handleSignInWithGoogle = useCallback(() => {
     if (!window.google?.accounts?.oauth2) {
-      showToast('Memuat Google Services, silakan coba beberapa saat lagi...', 'info');
+      showToast('Loading Google Services, please try again momentarily...', 'info');
       return;
     }
 
@@ -204,7 +232,7 @@ export default function App() {
         scope: GOOGLE_SCOPES,
         callback: async (response) => {
           if (response.error) {
-            showToast(`Gagal login Google: ${response.error}`, 'error');
+            showToast(`Google authentication failed: ${response.error}`, 'error');
             return;
           }
 
@@ -221,7 +249,7 @@ export default function App() {
               userAvatar: profile?.picture || prev.userAvatar,
             }));
 
-            showToast('Berhasil terhubung dengan akun Google!', 'success');
+            showToast('Successfully authenticated with Google account!', 'success');
           }
         },
       });
@@ -229,7 +257,7 @@ export default function App() {
       client.requestAccessToken();
     } catch (err: any) {
       console.error(err);
-      showToast('Gagal memulai login Google', 'error');
+      showToast('Failed to initiate Google authentication flow', 'error');
     }
   }, [showToast]);
 
@@ -242,13 +270,13 @@ export default function App() {
       spreadsheetId: '',
       spreadsheetName: '',
     }));
-    showToast('Koneksi Google Sheets berhasil diputuskan.', 'info');
+    showToast('Google Sheets connection disconnected.', 'info');
   }, [showToast]);
 
   // Sync data from connected Google Sheet
   const handleRefreshData = useCallback(async () => {
     if (!config.spreadsheetId) {
-      showToast('Belum ada Google Sheet yang terhubung', 'info');
+      showToast('No active Google Sheet currently linked', 'info');
       return;
     }
 
@@ -263,7 +291,7 @@ export default function App() {
       const result = await readDataFromGoogleSheet(currentToken, config.spreadsheetId);
       if (result.vehicles.length > 0) {
         setVehicles(result.vehicles);
-        const syncTime = new Date().toLocaleTimeString('id-ID', {
+        const syncTime = new Date().toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
         });
@@ -273,15 +301,15 @@ export default function App() {
           sheetName: result.sheetTitle,
         }));
         showToast(
-          `Berhasil menyinkronkan ${result.vehicles.length} unit sarana LV dari Google Sheet!`,
+          `Successfully synchronized ${result.vehicles.length} Light Vehicles from Google Sheet!`,
           'success'
         );
       } else {
-        showToast('Google Sheet terhubung, tetapi belum ada data baris unit sarana.', 'info');
+        showToast('Google Sheet connected, but no vehicle records were found.', 'info');
       }
     } catch (err: any) {
       console.error(err);
-      showToast(`Gagal menyinkronkan data: ${err.message || 'Error'}`, 'error');
+      showToast(`Failed to synchronize data: ${err.message || 'Error'}`, 'error');
     } finally {
       setIsSyncing(false);
     }
@@ -304,7 +332,7 @@ export default function App() {
           spreadsheetName,
           sheetName: result.sheetTitle,
           isConnected: true,
-          lastSyncTime: new Date().toLocaleTimeString('id-ID', {
+          lastSyncTime: new Date().toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
           }),
@@ -313,15 +341,15 @@ export default function App() {
         if (result.vehicles.length > 0) {
           setVehicles(result.vehicles);
           showToast(
-            `Berhasil memuat ${result.vehicles.length} unit dari Google Sheet: "${spreadsheetName}"`,
+            `Loaded ${result.vehicles.length} fleet units from Google Sheet: "${spreadsheetName}"`,
             'success'
           );
         } else {
-          showToast(`Terhubung ke "${spreadsheetName}". Format data siap digunakan!`, 'success');
+          showToast(`Connected to "${spreadsheetName}". Schema verified and ready for fleet records!`, 'success');
         }
       } catch (err: any) {
         console.error(err);
-        showToast(`Gagal membaca Google Sheet: ${err.message}`, 'error');
+        showToast(`Failed to read Google Sheet: ${err.message}`, 'error');
       } finally {
         setIsSyncing(false);
       }
@@ -336,7 +364,7 @@ export default function App() {
         prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v))
       );
 
-      showToast(`Status kewajiban ${updatedVehicle.noLambung} berhasil diperbarui!`, 'success');
+      showToast(`Compliance obligation status for ${updatedVehicle.noLambung} updated successfully!`, 'success');
 
       // Sync to Google Sheets if connected
       const currentToken = token || getStoredToken();
@@ -348,7 +376,7 @@ export default function App() {
             config.sheetName || 'Monitoring PM LV',
             updatedVehicle
           );
-          showToast(`Perubahan ${updatedVehicle.noLambung} tersinkron ke Google Sheets!`, 'success');
+          showToast(`Updates for ${updatedVehicle.noLambung} synced to Google Sheets!`, 'success');
         } catch (err) {
           console.error('Error syncing to sheet:', err);
         }
@@ -364,7 +392,7 @@ export default function App() {
         setVehicles((prev) =>
           prev.map((v) => (v.id === vehicleData.id ? vehicleData : v))
         );
-        showToast(`Data unit ${vehicleData.noLambung} berhasil diperbarui`, 'success');
+        showToast(`Asset specifications for ${vehicleData.noLambung} updated`, 'success');
 
         const currentToken = token || getStoredToken();
         if (currentToken && config.spreadsheetId && vehicleData.rowNumber) {
@@ -387,7 +415,7 @@ export default function App() {
         };
 
         setVehicles((prev) => [newVehicle, ...prev]);
-        showToast(`Sarana LV ${newVehicle.noLambung} berhasil didaftarkan`, 'success');
+        showToast(`Light Vehicle ${newVehicle.noLambung} registered to fleet`, 'success');
 
         const currentToken = token || getStoredToken();
         if (currentToken && config.spreadsheetId) {
@@ -405,6 +433,46 @@ export default function App() {
       }
     },
     [vehicles.length, token, config, showToast]
+  );
+
+  // Request to delete a vehicle (open confirmation modal)
+  const handleRequestDelete = useCallback((vehicle: SaranaLV) => {
+    setVehicleToDelete(vehicle);
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  // Confirm delete / reduce vehicle from fleet
+  const handleConfirmDelete = useCallback(
+    async (vehicleId: string) => {
+      const targetVehicle = vehicles.find((v) => v.id === vehicleId);
+      const remainingVehicles = vehicles.filter((v) => v.id !== vehicleId);
+      setVehicles(remainingVehicles);
+
+      showToast(
+        `Unit ${targetVehicle?.noLambung || 'Light Vehicle'} decommissioned from fleet`,
+        'info'
+      );
+
+      // Sync remaining vehicles to Google Sheets if connected
+      const currentToken = token || getStoredToken();
+      if (currentToken && config.spreadsheetId) {
+        try {
+          await syncAllVehiclesToGoogleSheet(
+            currentToken,
+            config.spreadsheetId,
+            config.sheetName || 'Monitoring PM LV',
+            remainingVehicles
+          );
+          showToast(
+            `Google Sheets fleet register updated (${remainingVehicles.length} units)`,
+            'success'
+          );
+        } catch (err) {
+          console.error('Error syncing vehicle deletion to sheets:', err);
+        }
+      }
+    },
+    [vehicles, token, config, showToast]
   );
 
   return (
@@ -451,6 +519,47 @@ export default function App() {
         {/* Hero Banner with Excavator loading haul truck and Red Curve Accent */}
         <HeroBanner />
 
+        {/* Admin Control Banner (Only visible when Admin Mode is active) */}
+        {isAdmin && (
+          <div className="mb-5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 shadow-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                ADM
+              </div>
+              <div>
+                <span className="text-xs font-bold text-amber-950 block">
+                  Fleet Administrator Mode Active
+                </span>
+                <span className="text-[11px] text-amber-800">
+                  Authorized permissions: Add new vehicles, modify technical specs, and decommission fleet units.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                id="banner-add-vehicle-btn"
+                onClick={() => {
+                  setEditingVehicle(null);
+                  setIsAddVehicleOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                <span>+ Add New Unit</span>
+              </button>
+              <button
+                type="button"
+                id="banner-manage-fleet-btn"
+                onClick={() => setIsAdminModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 font-semibold text-xs hover:bg-amber-100/70 transition-colors cursor-pointer"
+              >
+                <span>Manage Fleet / Decommission</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 4 Summary Cards: Overdue, Due today, Due tomorrow, Upcoming */}
         <KpiSummaryCards
           obligations={allObligations}
@@ -458,7 +567,7 @@ export default function App() {
           onSelectTab={(tab) => setSelectedStatusTab(tab)}
         />
 
-        {/* Weekly PM Report Section (PM compliance this week - Wajib 7 hari sekali) */}
+        {/* Weekly PM Report Section (PM compliance this week - Mandatory 7-day cycle) */}
         <WeeklyPmReportCard vehicles={vehicles} />
 
         {/* View Switcher Bar (Tabs) */}
@@ -474,7 +583,7 @@ export default function App() {
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              <span>Daftar Kewajiban (PM, Comm, Fuel)</span>
+              <span>Obligations Register (PM, Comm, Fuel)</span>
             </button>
 
             <button
@@ -487,43 +596,35 @@ export default function App() {
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Katalog Seluruh Unit LV ({vehicles.length})</span>
+              <span>Fleet Inventory ({vehicles.length})</span>
             </button>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2">
-            {config.spreadsheetId ? (
+          {config.spreadsheetId && (
+            <div className="hidden sm:flex items-center gap-2">
               <a
                 href={`https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Buka Google Sheet</span>
+                <span>Open Google Sheet</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsSheetModalOpen(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors cursor-pointer"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Hubungkan Google Sheet</span>
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* View 1: Obligations Register (The User's Desired View) */}
         {activeMainView === 'OBLIGATIONS' ? (
           <ObligationsRegister
             obligations={filteredObligations}
-            allObligationsCount={allObligations.length}
+            allObligationsCount={allPendingCount}
             pmCount={pmCount}
             commCount={commCount}
             fuelCount={fuelCount}
+            completedCount={completedCount}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             selectedType={selectedType}
@@ -543,6 +644,7 @@ export default function App() {
           /* View 2: Fleet Catalog & Detailed Specs Table */
           <VehicleTable
             vehicles={vehicles}
+            isAdmin={isAdmin}
             onOpenQuickPm={(vehicle) => {
               const pmItem: VehicleObligationItem = {
                 id: `${vehicle.id}_PM_CHECK`,
@@ -573,6 +675,7 @@ export default function App() {
               setDetailVehicle(vehicle);
               setIsDetailOpen(true);
             }}
+            onRequestDelete={handleRequestDelete}
           />
         )}
       </main>
@@ -581,18 +684,18 @@ export default function App() {
       <footer className="border-t border-slate-200 bg-white py-4 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">KPC Coal Mining · LV Control</span>
+            <span className="font-bold text-slate-800">KPC Coal Mining · LV Fleet Management</span>
             <span>•</span>
-            <span>Siklus PM Mingguan (7 Hari) · Commissioning · Fuel Expiry</span>
+            <span>Mandatory Weekly PM Cycle (7 Days) · Commissioning · Fuel Allocation</span>
           </div>
           <div className="flex items-center gap-3">
             {config.spreadsheetId ? (
               <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Tersinkron dengan Google Sheets: {config.spreadsheetName || 'Connected'}
+                Synchronized with Google Sheets: {config.spreadsheetName || 'Connected'}
               </span>
             ) : (
-              <span>Penyimpanan Lokal Aktif</span>
+              <span>Local Storage Active</span>
             )}
           </div>
         </div>
@@ -617,12 +720,18 @@ export default function App() {
         onClose={() => setIsAdminModalOpen(false)}
         onLoginSuccess={() => {
           setIsAdmin(true);
-          showToast('Login berhasil sebagai Admin Fleet Controller', 'success');
+          showToast('Successfully authenticated as Fleet Operations Admin', 'success');
         }}
         onLogout={() => {
           setIsAdmin(false);
-          showToast('Anda telah keluar dari Admin Mode', 'info');
+          showToast('Logged out of Admin Mode', 'info');
         }}
+        vehicles={vehicles}
+        onOpenAddVehicle={() => {
+          setEditingVehicle(null);
+          setIsAddVehicleOpen(true);
+        }}
+        onRequestDeleteVehicle={handleRequestDelete}
       />
 
       {/* 3. Add / Edit Vehicle Modal */}
@@ -635,12 +744,14 @@ export default function App() {
         onSave={handleSaveVehicle}
         editVehicle={editingVehicle}
         existingDepartments={['COAL MINING', 'MINING OPERATION', 'GEOLOGY', 'PLANT & WORKSHOP']}
+        onRequestDelete={handleRequestDelete}
       />
 
       {/* 4. Vehicle Detail Modal */}
       <VehicleDetailModal
         vehicle={detailVehicle}
         isOpen={isDetailOpen}
+        isAdmin={isAdmin}
         onClose={() => {
           setIsDetailOpen(false);
           setDetailVehicle(null);
@@ -655,9 +766,21 @@ export default function App() {
           setEditingVehicle(vehicle);
           setIsAddVehicleOpen(true);
         }}
+        onRequestDelete={handleRequestDelete}
       />
 
-      {/* 5. Google Sheets Connect & Management Modal */}
+      {/* 5. Delete Vehicle Confirmation Modal */}
+      <DeleteVehicleModal
+        vehicle={vehicleToDelete}
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setVehicleToDelete(null);
+        }}
+        onConfirmDelete={handleConfirmDelete}
+      />
+
+      {/* 6. Google Sheets Connect & Management Modal */}
       <GoogleSheetConnectModal
         isOpen={isSheetModalOpen}
         onClose={() => setIsSheetModalOpen(false)}

@@ -117,7 +117,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">
-                Konfirmasi {item.obligationName}
+                Confirm {item.obligationName} Completion
               </h3>
               <p className="text-xs text-slate-500 font-medium">
                 {vehicle.noLambung} · {vehicle.tipeKendaraan} ({vehicle.driver})
@@ -140,9 +140,9 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-900">
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold">Ketentuan PM Check Sarana LV:</span> Wajib diinspeksi rutin{' '}
-                <span className="font-semibold underline">1 minggu sekali (tiap 7 hari)</span>.
-                Tanggal jatuh tempo berikutnya otomatis diperbarui ke:{' '}
+                <span className="font-bold">Light Vehicle PM Policy:</span> Mandatory routine inspection{' '}
+                <span className="font-semibold underline">once every week (every 7 days)</span>.
+                Next inspection due date will automatically be scheduled for:{' '}
                 <span className="font-bold text-blue-700">{formatFriendlyDate(nextWeeklyPmDate)}</span>.
               </div>
             </div>
@@ -152,7 +152,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Tanggal Selesai
+                Completion Date
               </label>
               <input
                 type="date"
@@ -164,7 +164,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Jam Inspeksi
+                Inspection Time
               </label>
               <input
                 type="time"
@@ -179,7 +179,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
           {item.obligationType === 'COMMISSIONING' && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                No. Sertifikat / Stiker Commissioning KPC
+                KPC Commissioning Certificate / Sticker No.
               </label>
               <input
                 type="text"
@@ -190,7 +190,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
               />
               <span className="text-[10px] text-slate-400 mt-1 block">
-                Masa berlaku kelayakan unit masuk tambang diperpanjang 6 bulan ke depan.
+                Pit entry safety clearance validity extended for 6 months.
               </span>
             </div>
           )}
@@ -198,18 +198,18 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
           {item.obligationType === 'FUEL_EXPIRY' && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Alokasi / Kupon BBM Tambang
+                Mine Site Fuel Allocation / Voucher
               </label>
               <input
                 type="text"
                 required
                 value={fuelQuota}
                 onChange={(e) => setFuelQuota(e.target.value)}
-                placeholder="250 L / Bulan"
+                placeholder="250 L / Month"
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <span className="text-[10px] text-slate-400 mt-1 block">
-                Masa aktif kupon BBM diperbarui untuk siklus 30 hari berikutnya.
+                Fuel voucher authorization renewed for the next 30-day operating cycle.
               </span>
             </div>
           )}
@@ -218,7 +218,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
           {item.obligationType === 'PM_CHECK' && (
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
               <span className="text-xs font-bold text-slate-800 block">
-                Checklist Item Inspeksi Mingguan:
+                Mandatory Inspection Checklist:
               </span>
               <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input
@@ -227,7 +227,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
                   onChange={(e) => setChecklist({ ...checklist, oliMesin: e.target.checked })}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span>Level oli mesin, minyak rem, air radiator & filter udara</span>
+                <span>Engine oil level, brake fluid, radiator coolant & air intake filter</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input
@@ -236,7 +236,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
                   onChange={(e) => setChecklist({ ...checklist, remDanKopling: e.target.checked })}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span>Fungsi rem kaki, handbrake, dan pedal kopling normal</span>
+                <span>Service foot brakes, emergency handbrake, and clutch pedal operation</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input
@@ -245,7 +245,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
                   onChange={(e) => setChecklist({ ...checklist, bautRodaBan: e.target.checked })}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span>Alur ketebalan ban min. 50% & torsi baut roda aman</span>
+                <span>Tire tread depth min. 50% & wheel nut torque verified</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input
@@ -254,7 +254,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
                   onChange={(e) => setChecklist({ ...checklist, apar: e.target.checked })}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span>APAR 6kg bertekanan baik & kotak P3K lengkap</span>
+                <span>6kg fire extinguisher (APAR) pressure gauge in green & first-aid kit stocked</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input
@@ -263,7 +263,7 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
                   onChange={(e) => setChecklist({ ...checklist, radioRigDanRotator: e.target.checked })}
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
-                <span>Radio RIG frekuensi tambang, lampu rotator & buggy whip aktif</span>
+                <span>Two-way mine radio (RIG), amber rotator beacon & buggy whip functional</span>
               </label>
             </div>
           )}
@@ -271,13 +271,13 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
           {/* Notes */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Catatan / Hasil Pemeriksaan (Opsional)
+              Inspector Notes / Findings (Optional)
             </label>
             <textarea
               rows={2}
               value={inspectorNotes}
               onChange={(e) => setInspectorNotes(e.target.value)}
-              placeholder="Unit siap operasional lapangan tanpa kendala..."
+              placeholder="Vehicle certified ready for pit operations without defect..."
               className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
             ></textarea>
           </div>
@@ -289,14 +289,14 @@ export const ConfirmObligationModal: React.FC<ConfirmObligationModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             >
-              Batal
+              Cancel
             </button>
             <button
               type="submit"
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Simpan & Tandai Selesai</span>
+              <span>Confirm & Mark Completed</span>
             </button>
           </div>
         </form>

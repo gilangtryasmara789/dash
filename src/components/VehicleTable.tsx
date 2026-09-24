@@ -11,21 +11,26 @@ import {
   FileEdit,
   ExternalLink,
   ShieldCheck,
-  Calendar
+  Calendar,
+  Trash2,
 } from 'lucide-react';
 
 interface VehicleTableProps {
   vehicles: SaranaLV[];
+  isAdmin?: boolean;
   onOpenQuickPm: (vehicle: SaranaLV) => void;
   onOpenEdit: (vehicle: SaranaLV) => void;
   onOpenDetail: (vehicle: SaranaLV) => void;
+  onRequestDelete?: (vehicle: SaranaLV) => void;
 }
 
 export const VehicleTable: React.FC<VehicleTableProps> = ({
   vehicles,
+  isAdmin,
   onOpenQuickPm,
   onOpenEdit,
   onOpenDetail,
+  onRequestDelete,
 }) => {
   const getStatusBadge = (status: PMStatus) => {
     switch (status) {
@@ -33,14 +38,14 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            Sudah PM
+            PM Completed
           </span>
         );
       case 'DUE_SOON':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
             <Clock className="w-3.5 h-3.5 text-amber-600" />
-            Jatuh Tempo Segera
+            Due Soon
           </span>
         );
       case 'OVERDUE':
@@ -55,7 +60,7 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
             <Wrench className="w-3.5 h-3.5 text-slate-500" />
-            Belum PM
+            Pending PM
           </span>
         );
     }
@@ -67,7 +72,7 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
         return (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Operasional
+            Operational
           </span>
         );
       case 'STANDBY':
@@ -88,7 +93,7 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
         return (
           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            Sedang PM
+            Under Service
           </span>
         );
       default:
@@ -111,9 +116,9 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-xs">
         <Car className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <h3 className="text-base font-bold text-slate-800">Tidak ada unit sarana LV yang sesuai</h3>
+        <h3 className="text-base font-bold text-slate-800">No Light Vehicle assets found</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-          Coba ubah kata kunci pencarian atau reset filter untuk menampilkan semua unit.
+          Adjust your search parameters or reset active filters to display all fleet assets.
         </p>
       </div>
     );
@@ -125,13 +130,13 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
         <table className="w-full text-left border-collapse min-w-[960px]">
           <thead>
             <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider font-semibold">
-              <th className="py-3.5 px-4">No. Lambung</th>
-              <th className="py-3.5 px-4">Kendaraan & Penanggung Jawab</th>
-              <th className="py-3.5 px-4">KM Saat Ini / Target PM</th>
-              <th className="py-3.5 px-4">Jadwal PM (Terakhir & Jatuh Tempo)</th>
-              <th className="py-3.5 px-4">Status PM</th>
-              <th className="py-3.5 px-4">Kondisi Unit</th>
-              <th className="py-3.5 px-4 text-right">Aksi</th>
+              <th className="py-3.5 px-4">Fleet ID / Unit No</th>
+              <th className="py-3.5 px-4">Vehicle Asset & Operator</th>
+              <th className="py-3.5 px-4">Odometer / Next PM</th>
+              <th className="py-3.5 px-4">PM Schedule (Last & Due)</th>
+              <th className="py-3.5 px-4">PM Compliance</th>
+              <th className="py-3.5 px-4">Operational Status</th>
+              <th className="py-3.5 px-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
@@ -174,7 +179,7 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
                           {vehicle.noLambung}
                         </span>
                         <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-sm">
-                          {vehicle.noPolisi || 'No Plat'}
+                          {vehicle.noPolisi || 'Plate N/A'}
                         </span>
                       </div>
                     </div>
@@ -235,8 +240,8 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
                           }`}
                         >
                           {kmRemaining < 0
-                            ? `Over ${Math.abs(kmRemaining).toLocaleString()} KM`
-                            : `Sisa ${kmRemaining.toLocaleString()} KM`}
+                            ? `Over by ${Math.abs(kmRemaining).toLocaleString()} KM`
+                            : `${kmRemaining.toLocaleString()} KM remaining`}
                         </span>
                       </div>
                     </div>
@@ -246,13 +251,13 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
                   <td className="py-3.5 px-4 align-top">
                     <div>
                       <div className="flex items-center gap-1 text-[11px] text-slate-600">
-                        <span className="text-slate-400">Terakhir:</span>
+                        <span className="text-slate-400">Last PM:</span>
                         <span className="font-medium text-slate-800">
                           {vehicle.lastPmDate || '-'}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 text-[11px] text-slate-800 font-semibold mt-0.5">
-                        <span className="text-slate-400 font-normal">Jatuh Tempo:</span>
+                        <span className="text-slate-400 font-normal">Next Due:</span>
                         <span>{vehicle.nextPmDueDate || '-'}</span>
                       </div>
 
@@ -260,15 +265,15 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
                         <div className="mt-1">
                           {daysRemaining < 0 ? (
                             <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-sm">
-                              Terlewat {Math.abs(daysRemaining)} hari
+                              Overdue by {Math.abs(daysRemaining)} days
                             </span>
                           ) : daysRemaining <= 7 ? (
                             <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-sm">
-                              Sisa {daysRemaining} hari lagi
+                              Due in {daysRemaining} days
                             </span>
                           ) : (
                             <span className="text-[10px] text-slate-500">
-                              Sisa {daysRemaining} hari
+                              {daysRemaining} days remaining
                             </span>
                           )}
                         </div>
@@ -308,10 +313,10 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
                         type="button"
                         onClick={() => onOpenQuickPm(vehicle)}
                         className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer border border-emerald-200 hover:border-transparent"
-                        title="Catat Pelaksanaan PM Check"
+                        title="Record PM Check Execution"
                       >
                         <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Check PM</span>
+                        <span>Record PM</span>
                       </button>
 
                       {/* Edit Button */}
@@ -320,7 +325,7 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
                         type="button"
                         onClick={() => onOpenEdit(vehicle)}
                         className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                        title="Edit Data Unit"
+                        title="Edit Vehicle Asset"
                       >
                         <FileEdit className="w-3.5 h-3.5" />
                       </button>
@@ -331,10 +336,23 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
                         type="button"
                         onClick={() => onOpenDetail(vehicle)}
                         className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                        title="Lihat Detail"
+                        title="View Asset Specifications"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
+
+                      {/* Kurangkan / Hapus Unit Button (Khusus Admin) */}
+                      {isAdmin && onRequestDelete && (
+                        <button
+                          id={`btn-delete-${vehicle.noLambung.toLowerCase()}`}
+                          type="button"
+                          onClick={() => onRequestDelete(vehicle)}
+                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title={`Decommission vehicle ${vehicle.noLambung}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -346,15 +364,15 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
 
       {/* Footer Info */}
       <div className="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-        <span>Menampilkan {vehicles.length} unit sarana LV</span>
+        <span>Displaying {vehicles.length} Light Vehicle fleet assets</span>
         <div className="flex items-center gap-4 text-[11px]">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            Sudah PM
+            PM Completed
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-            Jatuh Tempo Segera
+            Due Soon
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-rose-500"></span>

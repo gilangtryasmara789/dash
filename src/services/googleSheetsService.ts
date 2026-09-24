@@ -98,7 +98,7 @@ export function formatFriendlyDate(dateStr?: string): string {
   try {
     const [year, month, day] = dateStr.split('-');
     if (!year || !month || !day) return dateStr;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sept', 'Okt', 'Nov', 'Des'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthName = months[parseInt(month, 10) - 1] || month;
     return `${parseInt(day, 10)} ${monthName} ${year}`;
   } catch {
@@ -467,3 +467,43 @@ export async function appendVehicleToGoogleSheet(
 
   return true;
 }
+
+export async function syncAllVehiclesToGoogleSheet(
+  token: string,
+  spreadsheetId: string,
+  sheetName: string,
+  vehicles: SaranaLV[]
+) {
+  const rows = vehicles.map((v, idx) => {
+    return vehicleToSheetRow({ ...v, rowNumber: idx + 2 });
+  });
+
+  // Clear existing rows A2:S500
+  const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'${sheetName}'!A2:S500:clear`;
+  await fetch(clearUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  }).catch(() => {});
+
+  if (rows.length > 0) {
+    const updateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/'${sheetName}'!A2:S${rows.length + 1}?valueInputOption=USER_ENTERED`;
+    await fetch(updateUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        range: `'${sheetName}'!A2:S${rows.length + 1}`,
+        majorDimension: 'ROWS',
+        values: rows,
+      }),
+    });
+  }
+
+  return true;
+}
+

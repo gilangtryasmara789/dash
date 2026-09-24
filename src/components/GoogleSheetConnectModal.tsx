@@ -60,7 +60,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
       setDriveFiles(files);
       setActiveTab('drive');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal memuat file Google Sheets dari Google Drive');
+      setErrorMsg(err.message || 'Failed to retrieve spreadsheets from Google Drive');
     } finally {
       setIsLoadingFiles(false);
     }
@@ -76,10 +76,10 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
     try {
       const res = await createNewSaranaLVSheet(token, currentVehicles);
       await onSelectSpreadsheet(res.spreadsheetId, res.spreadsheetName);
-      setSuccessMsg(`Berhasil membuat Google Sheet baru: "${res.spreadsheetName}"!`);
+      setSuccessMsg(`Successfully created new Google Sheet: "${res.spreadsheetName}"!`);
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal membuat Google Sheet baru');
+      setErrorMsg(err.message || 'Failed to create new Google Sheet');
     } finally {
       setIsCreating(false);
     }
@@ -97,11 +97,11 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
     }
 
     try {
-      await onSelectSpreadsheet(sheetId, 'Google Sheet LV Terhubung');
-      setSuccessMsg('Berhasil menghubungkan Google Sheet!');
+      await onSelectSpreadsheet(sheetId, 'Connected Fleet Google Sheet');
+      setSuccessMsg('Successfully linked Google Sheet!');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal menghubungkan Google Sheet tersebut');
+      setErrorMsg(err.message || 'Failed to link target Google Sheet');
     }
   };
 
@@ -115,9 +115,9 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Integrasi Google Sheets</h3>
+              <h3 className="text-base font-bold text-slate-900">Google Sheets Integration</h3>
               <p className="text-xs text-slate-500">
-                Sinkronisasi status PM Check sarana LV langsung ke spreadsheet Anda
+                Bidirectional synchronization of Light Vehicle PM inspections directly to your corporate sheet
               </p>
             </div>
           </div>
@@ -162,7 +162,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
               )}
               <div>
                 <span className="font-bold text-slate-800 block text-xs">
-                  {config.userName || 'Akun Google Terhubung'}
+                  {config.userName || 'Authorized Google Account'}
                 </span>
                 <span className="text-[11px] text-slate-500">
                   {config.userEmail || 'gilangtryasmara789@gmail.com'}
@@ -177,17 +177,17 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                   onClick={onSignInWithGoogle}
                   className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
                 >
-                  Hubungkan Akun Google
+                  Connect Google Account
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={onDisconnect}
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                  title="Putuskan sambungan akun"
+                  title="Disconnect account"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Putuskan</span>
+                  <span>Disconnect</span>
                 </button>
               )}
             </div>
@@ -199,7 +199,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
               <div className="flex items-center justify-between">
                 <span className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Spreadsheet Aktif Terhubung
+                  Active Connected Spreadsheet
                 </span>
                 <a
                   href={`https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit`}
@@ -207,7 +207,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-semibold text-xs underline"
                 >
-                  <span>Buka di Google Sheets</span>
+                  <span>Open in Google Sheets</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
@@ -215,7 +215,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
               <div className="bg-white p-2.5 rounded-lg border border-emerald-200 flex items-center justify-between text-xs">
                 <div>
                   <span className="font-bold text-slate-900 block truncate max-w-[280px]">
-                    {config.spreadsheetName || 'Data PM Sarana LV'}
+                    {config.spreadsheetName || 'Light Vehicle PM Fleet Register'}
                   </span>
                   <span className="text-[10px] text-slate-400 font-mono">
                     ID: {config.spreadsheetId}
@@ -227,13 +227,13 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                   className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-md transition-colors cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  <span>Sinkronkan</span>
+                  <span>Sync Now</span>
                 </button>
               </div>
 
               {config.lastSyncTime && (
                 <p className="text-[11px] text-emerald-700">
-                  Terakhir disinkronkan: {config.lastSyncTime}
+                  Last synchronized: {config.lastSyncTime}
                 </p>
               )}
             </div>
@@ -241,7 +241,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
-                Belum ada Google Sheet yang tersambung. Anda dapat membuat sheet baru otomatis atau memilih spreadsheet yang ada.
+                No Google Sheet currently connected. You can generate a new formatted spreadsheet or select an existing one.
               </span>
             </div>
           )}
@@ -258,7 +258,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Buat Sheet Otomatis
+                Auto-Create Sheet
               </button>
               <button
                 type="button"
@@ -274,7 +274,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Pilih dari Drive
+                Select from Drive
               </button>
               <button
                 type="button"
@@ -285,7 +285,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Tempel ID / Link URL
+                Paste ID or URL
               </button>
             </div>
 
@@ -298,10 +298,10 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-900 text-xs">
-                      Buat Spreadsheet Baru Siap Pakai di Google Drive Anda
+                      Generate Ready-to-Use Fleet Spreadsheet in Google Drive
                     </h4>
                     <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                      Sistem akan membuat file spreadsheet baru dengan format kolom standar (No Lambung, Tipe, Odometer, Tanggal PM Terakhir, Jatuh Tempo, Status PM, dll.) dan menyalin seluruh data armada Anda ke sana.
+                      Automatically provisions a formatted spreadsheet with standardized fleet headers (Fleet ID, Model, Odometer, Last PM Date, Due Date, PM Status, etc.) and synchronizes all active vehicles.
                     </p>
                   </div>
                 </div>
@@ -315,8 +315,8 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                   <PlusCircle className="w-4 h-4" />
                   <span>
                     {isCreating
-                      ? 'Sedang membuat spreadsheet di Drive...'
-                      : 'Buat & Hubungkan Google Sheet Baru'}
+                      ? 'Generating fleet spreadsheet in Drive...'
+                      : 'Create & Link New Google Sheet'}
                   </span>
                 </button>
               </div>
@@ -327,7 +327,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-slate-500 text-[11px]">
-                    Spreadsheet yang ditemukan di Google Drive:
+                    Available Spreadsheets in Google Drive:
                   </span>
                   <button
                     type="button"
@@ -336,25 +336,25 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                     className="text-blue-600 hover:underline text-[11px] flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw className={`w-3 h-3 ${isLoadingFiles ? 'animate-spin' : ''}`} />
-                    <span>Muat Ulang</span>
+                    <span>Reload</span>
                   </button>
                 </div>
 
                 {isLoadingFiles ? (
                   <div className="py-8 text-center text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
-                    <span>Memuat daftar spreadsheet Google Drive...</span>
+                    <span>Loading Google Drive spreadsheets...</span>
                   </div>
                 ) : driveFiles.length === 0 ? (
                   <div className="p-4 bg-slate-50 rounded-lg text-center text-slate-500">
                     <FolderOpen className="w-8 h-8 text-slate-300 mx-auto mb-1" />
-                    <p>Tidak ada spreadsheet ditemukan atau belum dimuat.</p>
+                    <p>No spreadsheets found or list not yet loaded.</p>
                     <button
                       type="button"
                       onClick={handleLoadDriveFiles}
                       className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-md text-xs font-semibold"
                     >
-                      Cari File Drive
+                      Browse Drive Files
                     </button>
                   </div>
                 ) : (
@@ -374,11 +374,11 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                             {file.name}
                           </span>
                           <span className="text-[10px] text-slate-400">
-                            Diubah: {new Date(file.modifiedTime).toLocaleDateString('id-ID')}
+                            Modified: {new Date(file.modifiedTime).toLocaleDateString('en-US')}
                           </span>
                         </div>
                         <span className="text-[11px] font-semibold text-blue-600 shrink-0">
-                          {config.spreadsheetId === file.id ? 'Terpilih' : 'Pilih'}
+                          {config.spreadsheetId === file.id ? 'Selected' : 'Select'}
                         </span>
                       </div>
                     ))}
@@ -392,7 +392,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
               <form onSubmit={handleApplyManualId} className="space-y-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Link URL atau ID Google Spreadsheet:
+                    Google Spreadsheet URL or File ID:
                   </label>
                   <div className="relative">
                     <Link2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -406,7 +406,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                     />
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1">
-                    Pastikan akun Google Anda memiliki akses edit ke spreadsheet ini.
+                    Verify that your authenticated Google Account has editor permissions on this sheet.
                   </p>
                 </div>
 
@@ -414,7 +414,7 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
                   type="submit"
                   className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-xs transition-colors cursor-pointer text-xs"
                 >
-                  Hubungkan Spreadsheet
+                  Link Spreadsheet
                 </button>
               </form>
             )}
@@ -423,13 +423,13 @@ export const GoogleSheetConnectModal: React.FC<GoogleSheetConnectModalProps> = (
 
         {/* Footer */}
         <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>Otentikasi aman via Google Identity Services</span>
+          <span>Enterprise security via Google Identity Services</span>
           <button
             type="button"
             onClick={onClose}
             className="px-3 py-1.5 font-semibold text-slate-600 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
           >
-            Tutup
+            Close
           </button>
         </div>
       </div>

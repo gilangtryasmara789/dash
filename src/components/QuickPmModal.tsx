@@ -62,6 +62,7 @@ export const QuickPmModal: React.FC<QuickPmModalProps> = ({
         nextPmDueDate: nextDueDate,
         nextPmDueKmHm: nextDueKm,
         pmIntervalKm: intervalKm,
+        pmStatus: 'DONE',
         statusPm: 'SUDAH_PM',
         statusOperasi: 'OPERASIONAL',
         lastInspector: mekanik,

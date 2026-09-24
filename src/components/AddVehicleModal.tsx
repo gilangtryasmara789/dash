@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SaranaLV, OperationalStatus, ObligationStatus } from '../types';
 import { addDays, calculateDaysDiff } from '../services/googleSheetsService';
-import { Truck, X, Save, Wrench, ShieldCheck, Fuel, Info } from 'lucide-react';
+import { Truck, X, Save, Wrench, ShieldCheck, Fuel, Info, Trash2 } from 'lucide-react';
 
 interface AddVehicleModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface AddVehicleModalProps {
   onSave: (vehicle: SaranaLV, isEdit: boolean) => Promise<void>;
   editVehicle: SaranaLV | null;
   existingDepartments: string[];
+  onRequestDelete?: (vehicle: SaranaLV) => void;
 }
 
 export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
@@ -17,6 +18,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
   onSave,
   editVehicle,
   existingDepartments,
+  onRequestDelete,
 }) => {
   if (!isOpen) return null;
 
@@ -156,10 +158,10 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">
-                {isEdit ? `Edit Sarana LV (${editVehicle.noLambung})` : 'Pendaftaran Unit Sarana LV Baru'}
+                {isEdit ? `Edit Light Vehicle Asset (${editVehicle.noLambung})` : 'Register New Light Vehicle Asset'}
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Sistem Pemantauan PM Mingguan, Commissioning, & Fuel Expiry
+                Mandatory Weekly PM Cycle, Commissioning, & Fuel Allocation Management
               </p>
             </div>
           </div>
@@ -178,17 +180,17 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           <div>
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Truck className="w-3.5 h-3.5 text-slate-500" />
-              <span>1. Identitas Sarana LV</span>
+              <span>1. Vehicle Asset Identification</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nomor Lambung <span className="text-red-500">*</span>
+                  Fleet ID / Unit No <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: LV-007"
+                  placeholder="e.g. LV-007"
                   value={noLambung}
                   onChange={(e) => setNoLambung(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono font-bold"
@@ -197,12 +199,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nomor Polisi <span className="text-red-500">*</span>
+                  License Plate No <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: KT 8107 SG"
+                  placeholder="e.g. KT 8107 SG"
                   value={noPolisi}
                   onChange={(e) => setNoPolisi(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono"
@@ -211,13 +213,13 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tipe Kendaraan
+                  Vehicle Make & Model
                 </label>
                 <input
                   type="text"
                   required
                   list="vehicleTypesList"
-                  placeholder="Contoh: TOYOTA AVANZA"
+                  placeholder="e.g. TOYOTA AVANZA"
                   value={tipeKendaraan}
                   onChange={(e) => setTipeKendaraan(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -233,7 +235,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Departemen / Divisi
+                  Department / Division
                 </label>
                 <input
                   type="text"
@@ -246,12 +248,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Driver / PIC Penanggung Jawab
+                  Designated Operator / PIC
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: BUDI SANTOSO"
+                  placeholder="e.g. BUDI SANTOSO"
                   value={driver}
                   onChange={(e) => setDriver(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 uppercase"
@@ -260,7 +262,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Lokasi Operasional / Pit
+                  Operating Location / Pit Area
                 </label>
                 <input
                   type="text"
@@ -278,12 +280,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-3">
             <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1.5">
               <Wrench className="w-3.5 h-3.5 text-blue-600" />
-              <span>2. Siklus PM Check (Wajib Tiap 1 Minggu)</span>
+              <span>2. Weekly PM Inspection Cycle (Mandatory 7-Day Interval)</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tanggal PM Terakhir
+                  Last PM Inspection Date
                 </label>
                 <input
                   type="date"
@@ -296,9 +298,9 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                  <span>Jatuh Tempo PM (7 Hari)</span>
+                  <span>Next PM Due Date (7 Days)</span>
                   <span className="text-[10px] text-blue-700 font-semibold bg-blue-100 px-1.5 py-0.2 rounded">
-                    Otomatis +7 Hari
+                    Auto +7 Days
                   </span>
                 </label>
                 <input
@@ -318,11 +320,11 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
             <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4 space-y-3">
               <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>3. Commissioning KPC</span>
+                <span>3. KPC Site Commissioning</span>
               </h4>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Jatuh Tempo Commissioning
+                  Commissioning Due Date
                 </label>
                 <input
                   type="date"
@@ -334,7 +336,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  No. Sertifikat Commissioning
+                  Commissioning Certificate No
                 </label>
                 <input
                   type="text"
@@ -350,11 +352,11 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
             <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 space-y-3">
               <h4 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
                 <Fuel className="w-3.5 h-3.5 text-amber-600" />
-                <span>4. Fuel Expiry (Kupon BBM)</span>
+                <span>4. Fuel Authorization (Monthly Quota)</span>
               </h4>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Jatuh Tempo Fuel Expiry
+                  Fuel Expiry Date
                 </label>
                 <input
                   type="date"
@@ -366,7 +368,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Kuota BBM Bulanan
+                  Monthly Fuel Allocation
                 </label>
                 <input
                   type="text"
@@ -382,22 +384,22 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Status Operasi
+                Operational Status
               </label>
               <select
                 value={statusOperasi}
                 onChange={(e) => setStatusOperasi(e.target.value as any)}
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               >
-                <option value="OPERASIONAL">OPERASIONAL (Siap Pakai)</option>
-                <option value="STANDBY">STANDBY (Cadangan Pool)</option>
-                <option value="BREAKDOWN">BREAKDOWN (Dalam Perbaikan)</option>
+                <option value="OPERASIONAL">OPERATIONAL (Active Service)</option>
+                <option value="STANDBY">STANDBY (Pool Reserve)</option>
+                <option value="BREAKDOWN">BREAKDOWN (Under Maintenance)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                KM / HM Saat Ini
+                Current Odometer (KM / HM)
               </label>
               <input
                 type="number"
@@ -410,34 +412,52 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Catatan / Remarks
+              Operational Remarks / Inspection History
             </label>
             <textarea
               rows={2}
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Catatan kondisi unit atau riwayat servis..."
+              placeholder="Enter vehicle notes, equipment status, or service logs..."
               className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
             ></textarea>
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-            >
-              <Save className="w-4 h-4 text-emerald-400" />
-              <span>{isEdit ? 'Simpan Perubahan' : 'Daftarkan Sarana LV'}</span>
-            </button>
+          <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3">
+            <div>
+              {isEdit && editVehicle && onRequestDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onRequestDelete(editVehicle);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-transparent rounded-xl transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Decommission Vehicle</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-4 h-4 text-emerald-400" />
+                <span>{isEdit ? 'Save Asset Updates' : 'Register Vehicle Asset'}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>
