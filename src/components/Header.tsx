@@ -56,9 +56,9 @@ export const Header: React.FC<HeaderProps> = ({
 
             <div className="flex items-center gap-2">
               <span className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
-                LV Fleet Operations
+                Coal Mining
               </span>
-              <span className="hidden md:inline text-xs text-slate-400 font-medium">· Coal Mining</span>
+              <span className="hidden md:inline text-xs text-slate-400 font-medium">·</span>
 
               {/* Real-time Cloud Status */}
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[10px] sm:text-[11px] font-semibold">
