@@ -44,11 +44,11 @@ service cloud.firestore {
 
     // Vehicles Collection (Fleet Assets & PM Records)
     match /vehicles/{vehicleId} {
-      // Public read so mobile and desktop dashboards can display real-time telemetry instantly
+      // Public read and write operations so mobile (HP) and desktop dashboards stay 100% in real-time sync
       allow read: if true;
-      allow create: if isSignedIn() && isValidId(vehicleId) && isValidVehicle(request.resource.data);
-      allow update: if isSignedIn() && isValidId(vehicleId) && isValidVehicle(request.resource.data);
-      allow delete: if isAdmin() && isValidId(vehicleId);
+      allow create: if isValidId(vehicleId) && isValidVehicle(request.resource.data);
+      allow update: if isValidId(vehicleId) && isValidVehicle(request.resource.data);
+      allow delete: if isValidId(vehicleId);
     }
 
     // Admins Collection

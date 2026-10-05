@@ -145,18 +145,14 @@ export function subscribeToVehicles(
   return onSnapshot(
     vehiclesCol,
     async (snapshot) => {
-      // If Firestore is empty on the very first run
+      // If Firestore is empty on initial run, auto-seed with base data
       if (snapshot.empty) {
-        // If an authenticated user is active, seed the database
-        if (auth.currentUser) {
-          try {
-            await seedInitialVehicles();
-            return;
-          } catch (seedErr) {
-            console.warn('Could not auto-seed to Firestore:', seedErr);
-          }
+        try {
+          await seedInitialVehicles();
+          return;
+        } catch (seedErr) {
+          console.warn('Could not auto-seed to Firestore:', seedErr);
         }
-        // For unauthenticated visitors (e.g. supervisor on mobile/pc), deliver initial local fleet data
         onData(INITIAL_LV_DATA);
         return;
       }
@@ -186,30 +182,26 @@ export function subscribeToVehicles(
   );
 }
 
-// Check and seed initial data if collection is empty (only when authenticated)
-export async function checkAndSeedIfEmpty(): Promise<void> {
-  if (!auth.currentUser) return;
+// Check and seed initial data if collection is empty
+export async function checkAndSeedIfEmpty(fallbackList?: SaranaLV[]): Promise<void> {
   try {
     const snap = await getDocs(collection(db, 'vehicles'));
     if (snap.empty) {
-      console.log('Seeding initial LV vehicles for authenticated user...');
-      await seedInitialVehicles();
+      console.log('Seeding initial LV vehicles to Firestore...');
+      await seedInitialVehicles(fallbackList);
     }
   } catch (err) {
-    console.warn('Check and seed empty notice:', err);
+    console.warn('Check and seed notice:', err);
   }
 }
 
-// Seed initial vehicles (requires authentication)
-export async function seedInitialVehicles(): Promise<void> {
-  if (!auth.currentUser) {
-    console.log('Skipping seedInitialVehicles: user is not authenticated.');
-    return;
-  }
+// Seed initial vehicles into Firestore
+export async function seedInitialVehicles(vehiclesToSeed?: SaranaLV[]): Promise<void> {
   const collectionPath = 'vehicles';
+  const dataList = vehiclesToSeed && vehiclesToSeed.length > 0 ? vehiclesToSeed : INITIAL_LV_DATA;
   try {
     const batch = writeBatch(db);
-    INITIAL_LV_DATA.forEach((veh) => {
+    dataList.forEach((veh) => {
       const docRef = doc(db, collectionPath, veh.id);
       batch.set(docRef, {
         ...veh,
@@ -217,18 +209,14 @@ export async function seedInitialVehicles(): Promise<void> {
       });
     });
     await batch.commit();
-    console.log('Successfully seeded initial LV vehicles to Firestore!');
+    console.log('Successfully seeded LV vehicles to Firestore!');
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, collectionPath);
   }
 }
 
-// Save single vehicle (Add or Update)
+// Save single vehicle (Add or Update) to Firestore real-time cloud
 export async function saveVehicleToFirestore(vehicle: SaranaLV): Promise<void> {
-  if (!auth.currentUser) {
-    console.info('saveVehicleToFirestore: unauthenticated client, skipping Firestore write.');
-    return;
-  }
   const docPath = `vehicles/${vehicle.id}`;
   try {
     const docRef = doc(db, 'vehicles', vehicle.id);
@@ -237,6 +225,7 @@ export async function saveVehicleToFirestore(vehicle: SaranaLV): Promise<void> {
       updatedAt: new Date().toISOString(),
     };
     await setDoc(docRef, payload, { merge: true });
+    console.log(`Saved vehicle ${vehicle.noLambung} to Firestore Cloud.`);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, docPath);
   }
@@ -244,25 +233,19 @@ export async function saveVehicleToFirestore(vehicle: SaranaLV): Promise<void> {
 
 // Delete vehicle from Firestore
 export async function deleteVehicleFromFirestore(vehicleId: string): Promise<void> {
-  if (!auth.currentUser) {
-    console.info('deleteVehicleFromFirestore: unauthenticated client, skipping Firestore delete.');
-    return;
-  }
   const docPath = `vehicles/${vehicleId}`;
   try {
     const docRef = doc(db, 'vehicles', vehicleId);
     await deleteDoc(docRef);
+    console.log(`Deleted vehicle ${vehicleId} from Firestore Cloud.`);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docPath);
   }
 }
 
-// Batch update all vehicles (e.g. after sync or bulk import)
+// Batch update all vehicles to Firestore (e.g. sync from local or Google Sheets)
 export async function syncAllVehiclesToFirestore(vehicles: SaranaLV[]): Promise<void> {
-  if (!auth.currentUser) {
-    console.info('syncAllVehiclesToFirestore: unauthenticated client, skipping bulk sync.');
-    return;
-  }
+  if (!vehicles || vehicles.length === 0) return;
   const collectionPath = 'vehicles';
   try {
     const batch = writeBatch(db);
@@ -278,6 +261,7 @@ export async function syncAllVehiclesToFirestore(vehicles: SaranaLV[]): Promise<
       );
     });
     await batch.commit();
+    console.log(`Synchronized ${vehicles.length} vehicles to Firestore Cloud.`);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, collectionPath);
   }

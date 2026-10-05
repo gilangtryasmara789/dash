@@ -56,24 +56,12 @@ import {
   Plus,
 } from 'lucide-react';
 
-const LOCAL_STORAGE_VEHICLES_KEY = 'sarana_lv_data_v2';
 const LOCAL_STORAGE_CONFIG_KEY = 'sarana_lv_sheet_config_v2';
 const LOCAL_STORAGE_ADMIN_KEY = 'sarana_lv_admin_active';
 
 export default function App() {
-  // 1. Data State
-  const [vehicles, setVehicles] = useState<SaranaLV[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_VEHICLES_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {
-        console.error('Error parsing stored vehicles', e);
-      }
-    }
-    return INITIAL_LV_DATA;
-  });
+  // 1. Data State (Cloud Firestore is the single source of truth)
+  const [vehicles, setVehicles] = useState<SaranaLV[]>(INITIAL_LV_DATA);
 
   // 2. Google Sheets Config State
   const [config, setConfig] = useState<GoogleSheetsConfig>(() => {
@@ -113,14 +101,9 @@ export default function App() {
       if (user && isUserAdmin(user)) {
         setIsAdmin(true);
       }
-      if (user) {
-        checkAndSeedIfEmpty().catch((err) =>
-          console.warn('Check seed on auth notice:', err)
-        );
-      }
     });
 
-    // 2. Real-time vehicles sync from Firestore
+    // 2. Real-time vehicles sync from Firestore (HP & Laptop stay in sync)
     const unsubVehicles = subscribeToVehicles(
       (firestoreVehicles) => {
         if (firestoreVehicles && firestoreVehicles.length > 0) {
@@ -130,6 +113,11 @@ export default function App() {
       (error) => {
         console.warn('Firestore subscription status:', error);
       }
+    );
+
+    // 3. Ensure Firestore is seeded with data if collection was empty
+    checkAndSeedIfEmpty().catch((err) =>
+      console.warn('Check seed on mount notice:', err)
     );
 
     return () => {
@@ -169,11 +157,7 @@ export default function App() {
 
   const [isSheetModalOpen, setIsSheetModalOpen] = useState(false);
 
-  // Persistence to localStorage
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_VEHICLES_KEY, JSON.stringify(vehicles));
-  }, [vehicles]);
-
+  // Persistence for user preferences only (Google Sheets config & Admin toggle)
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(config));
   }, [config]);
@@ -639,11 +623,11 @@ export default function App() {
                   Fleet Administrator Mode Active
                 </span>
                 <span className="text-[11px] text-amber-800 block">
-                  Permissions: Add new vehicles, modify technical specs, and decommission units.
+                  Wewenang: Tambah unit armada baru, edit spesifikasi teknis, konfirmasi PM, dan non-aktifkan unit.
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 id="banner-add-vehicle-btn"
@@ -651,18 +635,18 @@ export default function App() {
                   setEditingVehicle(null);
                   setIsAddVehicleOpen(true);
                 }}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs cursor-pointer flex-1 sm:flex-initial"
               >
                 <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                <span>+ Add Unit</span>
+                <span>+ Tambah Unit</span>
               </button>
               <button
                 type="button"
                 id="banner-manage-fleet-btn"
                 onClick={() => setIsAdminModalOpen(true)}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 font-semibold text-xs hover:bg-amber-100/70 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 font-semibold text-xs hover:bg-amber-100/70 transition-colors cursor-pointer flex-1 sm:flex-initial"
               >
-                <span>Manage Fleet</span>
+                <span>Kelola Armada</span>
               </button>
             </div>
           </div>
