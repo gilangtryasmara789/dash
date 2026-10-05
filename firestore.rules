@@ -29,13 +29,13 @@ service cloud.firestore {
     function isValidVehicle(data) {
       return data.id is string && data.id.size() <= 128 &&
              data.noLambung is string && data.noLambung.size() <= 64 &&
-             data.noPolisi is string && data.noPolisi.size() <= 64 &&
-             data.tipeKendaraan is string && data.tipeKendaraan.size() <= 128 &&
-             data.department is string && data.department.size() <= 128 &&
-             data.statusOperasi is string && data.statusOperasi.size() <= 64 &&
-             data.lastPmDate is string && data.lastPmDate.size() <= 32 &&
-             data.nextPmDueDate is string && data.nextPmDueDate.size() <= 32 &&
-             data.pmStatus is string && data.pmStatus.size() <= 32 &&
+             (!('noPolisi' in data) || (data.noPolisi is string && data.noPolisi.size() <= 64)) &&
+             (!('tipeKendaraan' in data) || (data.tipeKendaraan is string && data.tipeKendaraan.size() <= 128)) &&
+             (!('department' in data) || (data.department is string && data.department.size() <= 128)) &&
+             (!('statusOperasi' in data) || (data.statusOperasi is string && data.statusOperasi.size() <= 64)) &&
+             (!('lastPmDate' in data) || (data.lastPmDate is string && data.lastPmDate.size() <= 32)) &&
+             (!('nextPmDueDate' in data) || (data.nextPmDueDate is string && data.nextPmDueDate.size() <= 32)) &&
+             (!('pmStatus' in data) || (data.pmStatus is string && data.pmStatus.size() <= 32)) &&
              (!('driver' in data) || (data.driver is string && data.driver.size() <= 128)) &&
              (!('lokasi' in data) || (data.lokasi is string && data.lokasi.size() <= 128)) &&
              (!('catatan' in data) || (data.catatan is string && data.catatan.size() <= 2000)) &&

@@ -60,8 +60,9 @@ const LOCAL_STORAGE_CONFIG_KEY = 'sarana_lv_sheet_config_v2';
 const LOCAL_STORAGE_ADMIN_KEY = 'sarana_lv_admin_active';
 
 export default function App() {
-  // 1. Data State (Cloud Firestore is the single source of truth)
-  const [vehicles, setVehicles] = useState<SaranaLV[]>(INITIAL_LV_DATA);
+  // 1. Data State (Cloud Firestore is the single source of truth for all devices)
+  const [vehicles, setVehicles] = useState<SaranaLV[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
 
   // 2. Google Sheets Config State
   const [config, setConfig] = useState<GoogleSheetsConfig>(() => {
@@ -107,9 +108,11 @@ export default function App() {
     const unsubVehicles = subscribeToVehicles(
       (firestoreVehicles) => {
         setVehicles(firestoreVehicles || []);
+        setIsLoadingVehicles(false);
       },
       (error) => {
         console.warn('Firestore subscription status:', error);
+        setIsLoadingVehicles(false);
       }
     );
 
@@ -393,31 +396,31 @@ export default function App() {
   // Confirm / Save obligation update
   const handleSaveConfirmedObligation = useCallback(
     async (updatedVehicle: SaranaLV) => {
-      setVehicles((prev) =>
-        prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v))
-      );
+      try {
+        await saveVehicleToFirestore(updatedVehicle);
+        setVehicles((prev) =>
+          prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v))
+        );
+        showToast(`Kewajiban untuk ${updatedVehicle.noLambung} berhasil diperbarui di Cloud!`, 'success');
 
-      // Save to Firebase Firestore real-time cloud
-      saveVehicleToFirestore(updatedVehicle).catch((err) => {
-        console.warn('Firestore update notice:', err);
-      });
-
-      showToast(`Compliance obligation status for ${updatedVehicle.noLambung} updated successfully!`, 'success');
-
-      // Sync to Google Sheets if connected
-      const currentToken = token || getStoredToken();
-      if (currentToken && config.spreadsheetId) {
-        try {
-          await updateVehicleInGoogleSheet(
-            currentToken,
-            config.spreadsheetId,
-            config.sheetName || 'Monitoring PM LV',
-            updatedVehicle
-          );
-          showToast(`Updates for ${updatedVehicle.noLambung} synced to Google Sheets!`, 'success');
-        } catch (err) {
-          console.error('Error syncing to sheet:', err);
+        // Sync to Google Sheets if connected
+        const currentToken = token || getStoredToken();
+        if (currentToken && config.spreadsheetId) {
+          try {
+            await updateVehicleInGoogleSheet(
+              currentToken,
+              config.spreadsheetId,
+              config.sheetName || 'Monitoring PM LV',
+              updatedVehicle
+            );
+            showToast(`Updates for ${updatedVehicle.noLambung} synced to Google Sheets!`, 'success');
+          } catch (err) {
+            console.error('Error syncing to sheet:', err);
+          }
         }
+      } catch (err: any) {
+        console.error('Firestore obligation update error:', err);
+        showToast(`Gagal menyimpan perubahan ke Cloud: ${err.message || 'Error'}`, 'error');
       }
     },
     [token, config, showToast]
@@ -426,60 +429,61 @@ export default function App() {
   // Add / Edit complete vehicle
   const handleSaveVehicle = useCallback(
     async (vehicleData: SaranaLV, isEdit: boolean) => {
-      if (isEdit) {
-        setVehicles((prev) =>
-          prev.map((v) => (v.id === vehicleData.id ? vehicleData : v))
-        );
+      try {
+        if (isEdit) {
+          await saveVehicleToFirestore(vehicleData);
+          setVehicles((prev) =>
+            prev.map((v) => (v.id === vehicleData.id ? vehicleData : v))
+          );
+          showToast(`Spesifikasi ${vehicleData.noLambung} berhasil diperbarui di Cloud!`, 'success');
 
-        // Save to Firebase Firestore
-        saveVehicleToFirestore(vehicleData).catch((err) => {
-          console.warn('Firestore update notice:', err);
-        });
+          const currentToken = token || getStoredToken();
+          if (currentToken && config.spreadsheetId && vehicleData.rowNumber) {
+            try {
+              await updateVehicleInGoogleSheet(
+                currentToken,
+                config.spreadsheetId,
+                config.sheetName || 'Monitoring PM LV',
+                vehicleData
+              );
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        } else {
+          const newRowNumber = vehicles.length + 2;
+          const newVehicle: SaranaLV = {
+            ...vehicleData,
+            rowNumber: newRowNumber,
+          };
 
-        showToast(`Asset specifications for ${vehicleData.noLambung} updated`, 'success');
+          await saveVehicleToFirestore(newVehicle);
+          setVehicles((prev) => {
+            if (prev.some((v) => v.id === newVehicle.id)) {
+              return prev.map((v) => (v.id === newVehicle.id ? newVehicle : v));
+            }
+            return [newVehicle, ...prev];
+          });
 
-        const currentToken = token || getStoredToken();
-        if (currentToken && config.spreadsheetId && vehicleData.rowNumber) {
-          try {
-            await updateVehicleInGoogleSheet(
-              currentToken,
-              config.spreadsheetId,
-              config.sheetName || 'Monitoring PM LV',
-              vehicleData
-            );
-          } catch (err) {
-            console.error(err);
+          showToast(`Unit ${newVehicle.noLambung} berhasil didaftarkan ke Cloud Database!`, 'success');
+
+          const currentToken = token || getStoredToken();
+          if (currentToken && config.spreadsheetId) {
+            try {
+              await appendVehicleToGoogleSheet(
+                currentToken,
+                config.spreadsheetId,
+                config.sheetName || 'Monitoring PM LV',
+                newVehicle
+              );
+            } catch (err) {
+              console.error(err);
+            }
           }
         }
-      } else {
-        const newRowNumber = vehicles.length + 2;
-        const newVehicle: SaranaLV = {
-          ...vehicleData,
-          rowNumber: newRowNumber,
-        };
-
-        setVehicles((prev) => [newVehicle, ...prev]);
-
-        // Save new vehicle to Firebase Firestore
-        saveVehicleToFirestore(newVehicle).catch((err) => {
-          console.warn('Firestore insert notice:', err);
-        });
-
-        showToast(`Light Vehicle ${newVehicle.noLambung} registered to fleet`, 'success');
-
-        const currentToken = token || getStoredToken();
-        if (currentToken && config.spreadsheetId) {
-          try {
-            await appendVehicleToGoogleSheet(
-              currentToken,
-              config.spreadsheetId,
-              config.sheetName || 'Monitoring PM LV',
-              newVehicle
-            );
-          } catch (err) {
-            console.error(err);
-          }
-        }
+      } catch (err: any) {
+        console.error('Firestore save vehicle error:', err);
+        showToast(`Gagal mendaftarkan armada ke Cloud: ${err.message || 'Error'}`, 'error');
       }
     },
     [vehicles.length, token, config, showToast]
@@ -495,36 +499,37 @@ export default function App() {
   const handleConfirmDelete = useCallback(
     async (vehicleId: string) => {
       const targetVehicle = vehicles.find((v) => v.id === vehicleId);
-      const remainingVehicles = vehicles.filter((v) => v.id !== vehicleId);
-      setVehicles(remainingVehicles);
+      try {
+        await deleteVehicleFromFirestore(vehicleId);
+        const remainingVehicles = vehicles.filter((v) => v.id !== vehicleId);
+        setVehicles(remainingVehicles);
 
-      // Delete from Firebase Firestore
-      deleteVehicleFromFirestore(vehicleId).catch((err) => {
-        console.warn('Firestore delete notice:', err);
-      });
+        showToast(
+          `Unit ${targetVehicle?.noLambung || 'Light Vehicle'} berhasil dihapus dari Cloud`,
+          'info'
+        );
 
-      showToast(
-        `Unit ${targetVehicle?.noLambung || 'Light Vehicle'} decommissioned from fleet`,
-        'info'
-      );
-
-      // Sync remaining vehicles to Google Sheets if connected
-      const currentToken = token || getStoredToken();
-      if (currentToken && config.spreadsheetId) {
-        try {
-          await syncAllVehiclesToGoogleSheet(
-            currentToken,
-            config.spreadsheetId,
-            config.sheetName || 'Monitoring PM LV',
-            remainingVehicles
-          );
-          showToast(
-            `Google Sheets fleet register updated (${remainingVehicles.length} units)`,
-            'success'
-          );
-        } catch (err) {
-          console.error('Error syncing vehicle deletion to sheets:', err);
+        // Sync remaining vehicles to Google Sheets if connected
+        const currentToken = token || getStoredToken();
+        if (currentToken && config.spreadsheetId) {
+          try {
+            await syncAllVehiclesToGoogleSheet(
+              currentToken,
+              config.spreadsheetId,
+              config.sheetName || 'Monitoring PM LV',
+              remainingVehicles
+            );
+            showToast(
+              `Google Sheets fleet register updated (${remainingVehicles.length} units)`,
+              'success'
+            );
+          } catch (err) {
+            console.error('Error syncing vehicle deletion to sheets:', err);
+          }
         }
+      } catch (err: any) {
+        console.error('Firestore delete vehicle error:', err);
+        showToast(`Gagal menghapus unit: ${err.message || 'Error'}`, 'error');
       }
     },
     [vehicles, token, config, showToast]
@@ -536,9 +541,9 @@ export default function App() {
       return;
     }
     const currentList = [...vehicles];
-    setVehicles([]);
     try {
       await Promise.all(currentList.map((v) => deleteVehicleFromFirestore(v.id)));
+      setVehicles([]);
       showToast('Seluruh armada berhasil dikosongkan dari Cloud Firestore.', 'info');
     } catch (err: any) {
       console.error('Error clearing fleet:', err);
@@ -672,125 +677,181 @@ export default function App() {
           </div>
         )}
 
-        {/* 4 Summary Cards: Overdue, Due today, Due tomorrow, Upcoming */}
-        <KpiSummaryCards
-          obligations={allObligations}
-          activeFilterTab={selectedStatusTab}
-          onSelectTab={(tab) => setSelectedStatusTab(tab)}
-        />
-
-        {/* Weekly PM Report Section (PM compliance this week - Mandatory 7-day cycle) */}
-        <WeeklyPmReportCard vehicles={vehicles} />
-
-        {/* View Switcher Bar (Tabs) */}
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-2">
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setActiveMainView('OBLIGATIONS')}
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeMainView === 'OBLIGATIONS'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Obligations Register (PM, Comm, Fuel)</span>
-              <span className="sm:hidden">Obligations</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveMainView('FLEET')}
-              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeMainView === 'FLEET'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Fleet Inventory ({vehicles.length})</span>
-              <span className="sm:hidden">Fleet ({vehicles.length})</span>
-            </button>
+        {/* Loading State */}
+        {isLoadingVehicles ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs mb-6">
+            <div className="w-8 h-8 border-3 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <h3 className="text-sm font-bold text-slate-800">Menghubungkan ke Cloud Database...</h3>
+            <p className="text-xs text-slate-400 mt-1">Mengambil data armada real-time untuk Laptop & HP</p>
           </div>
-
-          {config.spreadsheetId && (
-            <div className="hidden sm:flex items-center gap-2">
-              <a
-                href={`https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors"
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Open Google Sheet</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-          )}
-        </div>
-
-        {/* View 1: Obligations Register (The User's Desired View) */}
-        {activeMainView === 'OBLIGATIONS' ? (
-          <ObligationsRegister
-            obligations={filteredObligations}
-            allObligationsCount={allPendingCount}
-            pmCount={pmCount}
-            commCount={commCount}
-            fuelCount={fuelCount}
-            completedCount={completedCount}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            selectedType={selectedType}
-            onSelectType={setSelectedType}
-            selectedStatusTab={selectedStatusTab}
-            onSelectStatusTab={setSelectedStatusTab}
-            onConfirmObligation={(item) => {
-              setSelectedObligationItem(item);
-              setIsConfirmModalOpen(true);
-            }}
-            onViewVehicleDetail={(vehicle) => {
-              setDetailVehicle(vehicle);
-              setIsDetailOpen(true);
-            }}
-          />
         ) : (
-          /* View 2: Fleet Catalog & Detailed Specs Table */
-          <VehicleTable
-            vehicles={vehicles}
-            isAdmin={isAdmin}
-            onOpenQuickPm={(vehicle) => {
-              const pmItem: VehicleObligationItem = {
-                id: `${vehicle.id}_PM_CHECK`,
-                vehicleId: vehicle.id,
-                noLambung: vehicle.noLambung,
-                noPolisi: vehicle.noPolisi,
-                tipeKendaraan: vehicle.tipeKendaraan,
-                department: vehicle.department,
-                driver: vehicle.driver,
-                obligationType: 'PM_CHECK',
-                obligationName: 'PM Check',
-                dueDate: vehicle.nextPmDueDate,
-                doneDate: vehicle.pmDoneDate,
-                scheduleTime: vehicle.pmScheduleTime || '20:00',
-                status: vehicle.pmStatus,
-                daysDiff: 0,
-                hTag: 'Weekly',
-                vehicle,
-              };
-              setSelectedObligationItem(pmItem);
-              setIsConfirmModalOpen(true);
-            }}
-            onOpenEdit={(vehicle) => {
-              setEditingVehicle(vehicle);
-              setIsAddVehicleOpen(true);
-            }}
-            onOpenDetail={(vehicle) => {
-              setDetailVehicle(vehicle);
-              setIsDetailOpen(true);
-            }}
-            onRequestDelete={handleRequestDelete}
-          />
+          <>
+            {/* Empty Fleet Notice */}
+            {vehicles.length === 0 && (
+              <div className="mb-6 p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs text-center">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-500">
+                  <Layers className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900">Armada Saat Ini Kosong (0 Unit)</h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  Semua armada telah dikosongkan dari Cloud Firestore. Data ini disinkronkan langsung secara real-time ke semua perangkat (Laptop & HP).
+                </p>
+                {isAdmin ? (
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingVehicle(null);
+                        setIsAddVehicleOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4 text-emerald-400" />
+                      <span>+ Tambah 1 Armada Baru</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLoadDemoVehicles}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs hover:bg-slate-200 transition-colors cursor-pointer border border-slate-200"
+                    >
+                      <span>Muat Data Demo (6 Unit)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsAdminModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+                    >
+                      <span>Login Admin untuk Tambah Armada</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 4 Summary Cards: Overdue, Due today, Due tomorrow, Upcoming */}
+            <KpiSummaryCards
+              obligations={allObligations}
+              activeFilterTab={selectedStatusTab}
+              onSelectTab={(tab) => setSelectedStatusTab(tab)}
+            />
+
+            {/* Weekly PM Report Section (PM compliance this week - Mandatory 7-day cycle) */}
+            <WeeklyPmReportCard vehicles={vehicles} />
+
+            {/* View Switcher Bar (Tabs) */}
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-2">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setActiveMainView('OBLIGATIONS')}
+                  className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeMainView === 'OBLIGATIONS'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Obligations Register (PM, Comm, Fuel)</span>
+                  <span className="sm:hidden">Obligations</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMainView('FLEET')}
+                  className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeMainView === 'FLEET'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                  <span className="hidden sm:inline">Fleet Inventory ({vehicles.length})</span>
+                  <span className="sm:hidden">Fleet ({vehicles.length})</span>
+                </button>
+              </div>
+
+              {config.spreadsheetId && (
+                <div className="hidden sm:flex items-center gap-2">
+                  <a
+                    href={`https://docs.google.com/spreadsheets/d/${config.spreadsheetId}/edit`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-900 transition-colors"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Open Google Sheet</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* View 1: Obligations Register (The User's Desired View) */}
+            {activeMainView === 'OBLIGATIONS' ? (
+              <ObligationsRegister
+                obligations={filteredObligations}
+                allObligationsCount={allPendingCount}
+                pmCount={pmCount}
+                commCount={commCount}
+                fuelCount={fuelCount}
+                completedCount={completedCount}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedType={selectedType}
+                onSelectType={setSelectedType}
+                selectedStatusTab={selectedStatusTab}
+                onSelectStatusTab={setSelectedStatusTab}
+                onConfirmObligation={(item) => {
+                  setSelectedObligationItem(item);
+                  setIsConfirmModalOpen(true);
+                }}
+                onViewVehicleDetail={(vehicle) => {
+                  setDetailVehicle(vehicle);
+                  setIsDetailOpen(true);
+                }}
+              />
+            ) : (
+              /* View 2: Fleet Catalog & Detailed Specs Table */
+              <VehicleTable
+                vehicles={vehicles}
+                isAdmin={isAdmin}
+                onOpenQuickPm={(vehicle) => {
+                  const pmItem: VehicleObligationItem = {
+                    id: `${vehicle.id}_PM_CHECK`,
+                    vehicleId: vehicle.id,
+                    noLambung: vehicle.noLambung,
+                    noPolisi: vehicle.noPolisi,
+                    tipeKendaraan: vehicle.tipeKendaraan,
+                    department: vehicle.department,
+                    driver: vehicle.driver,
+                    obligationType: 'PM_CHECK',
+                    obligationName: 'PM Check',
+                    dueDate: vehicle.nextPmDueDate,
+                    doneDate: vehicle.pmDoneDate,
+                    scheduleTime: vehicle.pmScheduleTime || '20:00',
+                    status: vehicle.pmStatus,
+                    daysDiff: 0,
+                    hTag: 'Weekly',
+                    vehicle,
+                  };
+                  setSelectedObligationItem(pmItem);
+                  setIsConfirmModalOpen(true);
+                }}
+                onOpenEdit={(vehicle) => {
+                  setEditingVehicle(vehicle);
+                  setIsAddVehicleOpen(true);
+                }}
+                onOpenDetail={(vehicle) => {
+                  setDetailVehicle(vehicle);
+                  setIsDetailOpen(true);
+                }}
+                onRequestDelete={handleRequestDelete}
+              />
+            )}
+          </>
         )}
       </main>
 

@@ -120,7 +120,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({
         lastPmDate,
         nextPmDueDate,
         pmStatus,
-        pmDoneDate: pmStatus === 'DONE' ? lastPmDate : undefined,
+        pmDoneDate: pmStatus === 'DONE' ? lastPmDate : '',
         pmScheduleTime: '20:00',
 
         // Comm

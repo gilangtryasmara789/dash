@@ -67,8 +67,9 @@ export function handleFirestoreError(
   operationType: OperationType,
   path: string | null
 ): never {
+  const errMsg = error instanceof Error ? error.message : String(error);
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -85,7 +86,22 @@ export function handleFirestoreError(
     path,
   };
   console.error('Firestore Error:', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  throw new Error(errMsg);
+}
+
+// Clean undefined values recursively so Firestore never throws 'Unsupported field value: undefined'
+export function cleanForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        clean[key] = cleanForFirestore(value);
+      } else {
+        clean[key] = value;
+      }
+    }
+  }
+  return clean;
 }
 
 // Test connection on boot
@@ -197,10 +213,10 @@ export async function seedInitialVehicles(vehiclesToSeed?: SaranaLV[]): Promise<
     const batch = writeBatch(db);
     dataList.forEach((veh) => {
       const docRef = doc(db, collectionPath, veh.id);
-      batch.set(docRef, {
+      batch.set(docRef, cleanForFirestore({
         ...veh,
         updatedAt: new Date().toISOString(),
-      });
+      }));
     });
     await batch.commit();
     console.log('Successfully seeded LV vehicles to Firestore!');
@@ -214,10 +230,10 @@ export async function saveVehicleToFirestore(vehicle: SaranaLV): Promise<void> {
   const docPath = `vehicles/${vehicle.id}`;
   try {
     const docRef = doc(db, 'vehicles', vehicle.id);
-    const payload = {
+    const payload = cleanForFirestore({
       ...vehicle,
       updatedAt: new Date().toISOString(),
-    };
+    });
     await setDoc(docRef, payload, { merge: true });
     console.log(`Saved vehicle ${vehicle.noLambung} to Firestore Cloud.`);
   } catch (error) {
@@ -247,10 +263,10 @@ export async function syncAllVehiclesToFirestore(vehicles: SaranaLV[]): Promise<
       const docRef = doc(db, 'vehicles', v.id);
       batch.set(
         docRef,
-        {
+        cleanForFirestore({
           ...v,
           updatedAt: new Date().toISOString(),
-        },
+        }),
         { merge: true }
       );
     });
