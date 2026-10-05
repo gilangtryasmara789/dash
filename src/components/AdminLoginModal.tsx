@@ -73,23 +73,23 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className={`bg-white rounded-2xl shadow-2xl w-full overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 ${
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className={`bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 ${
         isAdmin ? 'max-w-xl' : 'max-w-sm'
       }`}>
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs ${
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs shrink-0 ${
               isAdmin ? 'bg-emerald-600' : 'bg-slate-900'
             }`}>
               {isAdmin ? <Unlock className="w-4 h-4 text-white" /> : <Lock className="w-4 h-4 text-amber-400" />}
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-slate-900 truncate">
                 {isAdmin ? 'Fleet Administrator Console' : 'Fleet Administrator Authentication'}
               </h3>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-500 truncate">
                 {isAdmin ? 'Manage Fleet Register & Decommissioning' : 'Light Vehicle Fleet Control · Coal Mining'}
               </p>
             </div>
@@ -97,14 +97,14 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <button
             type="button"
             onClick={handleClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1">
           {isAdmin ? (
             /* ADMIN LOGGED-IN VIEW: MANAGE (ADD / DELETE) VEHICLES */
             <div className="space-y-4">

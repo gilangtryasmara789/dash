@@ -126,7 +126,121 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Mobile Card Feed View (block md:hidden) - Zero horizontal scroll on mobile */}
+      <div className="block md:hidden divide-y divide-slate-100">
+        {vehicles.map((vehicle) => {
+          const daysRemaining = calculateDaysRemaining(vehicle.nextPmDueDate);
+          const nextKm = vehicle.nextPmDueKmHm || (vehicle.currentKmHm + 5000);
+          const effectivePmStatus = vehicle.pmStatus || vehicle.statusPm || 'SCHEDULED';
+
+          return (
+            <div key={vehicle.id} className="p-4 hover:bg-slate-50/50 transition-colors">
+              {/* Top: Fleet ID, Plate & Status */}
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2 h-8 rounded-full shrink-0 ${
+                      (effectivePmStatus as string) === 'SUDAH_PM' || effectivePmStatus === 'DONE'
+                        ? 'bg-emerald-500'
+                        : (effectivePmStatus as string) === 'DUE_SOON'
+                        ? 'bg-amber-500'
+                        : effectivePmStatus === 'OVERDUE'
+                        ? 'bg-rose-500'
+                        : 'bg-slate-400'
+                    }`}
+                  />
+                  <div>
+                    <span className="font-bold text-base text-slate-900 leading-tight block">
+                      {vehicle.noLambung}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-sm">
+                      {vehicle.noPolisi || 'Plate N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-1">
+                  {getStatusBadge(effectivePmStatus as PMStatus)}
+                  {getOperationalBadge(vehicle.statusOperasi)}
+                </div>
+              </div>
+
+              {/* Details box */}
+              <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-100 space-y-2 mb-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-800">{vehicle.tipeKendaraan}</span>
+                  <span className="text-slate-500 text-[11px] font-medium">{vehicle.department}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-200/60">
+                  <div className="flex items-center gap-1 truncate">
+                    <User className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="truncate">{vehicle.driver || 'No assigned driver'}</span>
+                  </div>
+                  {vehicle.lokasi && (
+                    <div className="flex items-center gap-1 text-slate-400 truncate max-w-[140px]">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{vehicle.lokasi}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* PM due date & Odometer */}
+                <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1 border-t border-slate-200/60">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Next PM: <strong className="text-slate-800">{vehicle.nextPmDueDate || '-'}</strong></span>
+                  </div>
+                  <span>{vehicle.currentKmHm.toLocaleString()} KM</span>
+                </div>
+              </div>
+
+              {/* Action buttons for mobile */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onOpenQuickPm(vehicle)}
+                  className="flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 bg-slate-900 text-white hover:bg-slate-800 cursor-pointer min-h-[40px]"
+                >
+                  <Wrench className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Update PM</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenDetail(vehicle)}
+                  className="py-2 px-3 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors cursor-pointer min-h-[40px]"
+                  title="Detail Specs"
+                >
+                  Detail
+                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenEdit(vehicle)}
+                    className="py-2 px-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors cursor-pointer min-h-[40px]"
+                    title="Edit Unit"
+                  >
+                    <FileEdit className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {isAdmin && onRequestDelete && (
+                  <button
+                    type="button"
+                    onClick={() => onRequestDelete(vehicle)}
+                    className="py-2 px-2.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer min-h-[40px]"
+                    title="Decommission Unit"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View (hidden md:block) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[960px]">
           <thead>
             <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-xs uppercase tracking-wider font-semibold">

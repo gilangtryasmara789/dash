@@ -71,40 +71,36 @@ export const WeeklyPmReportCard: React.FC<WeeklyPmReportCardProps> = ({ vehicles
           </p>
         </div>
 
-        {/* Right: Metrics Numbers (Crisp Black Styling) */}
-        <div className="flex items-center gap-6 sm:gap-8 self-start md:self-center">
+        {/* Right: Metrics Numbers (Clean Mobile Grid & Desktop Flex) */}
+        <div className="grid grid-cols-3 gap-2 w-full md:w-auto md:flex md:items-center md:gap-8 pt-3 md:pt-0 border-t border-slate-100 md:border-t-0">
           {/* Unit Completed */}
-          <div className="text-left sm:text-right">
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <div className="text-center md:text-right bg-slate-50/80 md:bg-transparent p-2 md:p-0 rounded-xl border border-slate-100 md:border-0">
+            <div className="text-lg sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {completedCount}
-              <span className="text-slate-400 font-semibold text-base sm:text-lg">/{totalVehicles}</span>
+              <span className="text-slate-400 font-semibold text-xs sm:text-lg">/{totalVehicles}</span>
             </div>
-            <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-              UNITS CLEARED
+            <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 truncate">
+              CLEARED
             </div>
           </div>
-
-          <div className="h-9 w-px bg-slate-200 hidden xs:block"></div>
 
           {/* Pending PM */}
-          <div className="text-left sm:text-right">
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <div className="text-center md:text-right bg-slate-50/80 md:bg-transparent p-2 md:p-0 rounded-xl border border-slate-100 md:border-0">
+            <div className="text-lg sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {pendingCount}
             </div>
-            <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-              PENDING PM
+            <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 truncate">
+              PENDING
             </div>
           </div>
 
-          <div className="h-9 w-px bg-slate-200 hidden xs:block"></div>
-
           {/* Compliance Percentage */}
-          <div className="text-left sm:text-right">
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <div className="text-center md:text-right bg-slate-50/80 md:bg-transparent p-2 md:p-0 rounded-xl border border-slate-100 md:border-0">
+            <div className="text-lg sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {compliancePercentage}%
             </div>
-            <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-              COMPLIANCE
+            <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 truncate">
+              RATE
             </div>
           </div>
         </div>

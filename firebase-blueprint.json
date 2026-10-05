@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Sarana Light Vehicle (LV) unit monitoring and PM tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique vehicle ID" },
+        "noLambung": { "type": "string", "description": "Vehicle fleet code (e.g. LV-001)" },
+        "noPolisi": { "type": "string", "description": "License plate number" },
+        "tipeKendaraan": { "type": "string", "description": "Vehicle model or type" },
+        "department": { "type": "string", "description": "Department name" },
+        "driver": { "type": "string", "description": "Driver or PIC" },
+        "lokasi": { "type": "string", "description": "Operating location" },
+        "currentKmHm": { "type": "number", "description": "Current KM or HM" },
+        "statusOperasi": { "type": "string", "description": "Operational status" },
+        "catatan": { "type": "string", "description": "Notes or remarks" },
+        "lastPmDate": { "type": "string", "description": "Last PM date" },
+        "nextPmDueDate": { "type": "string", "description": "Next PM due date" },
+        "pmStatus": { "type": "string", "description": "PM status" },
+        "pmDoneDate": { "type": "string", "description": "PM completion date" },
+        "pmScheduleTime": { "type": "string", "description": "PM schedule time" },
+        "lastCommissioningDate": { "type": "string", "description": "Last commissioning date" },
+        "commissioningDueDate": { "type": "string", "description": "Commissioning due date" },
+        "commissioningStatus": { "type": "string", "description": "Commissioning status" },
+        "commissioningDoneDate": { "type": "string", "description": "Commissioning completion date" },
+        "commissioningCertificateNo": { "type": "string", "description": "Certificate number" },
+        "commissioningScheduleTime": { "type": "string", "description": "Commissioning schedule time" },
+        "lastFuelRenewDate": { "type": "string", "description": "Last fuel renewal date" },
+        "fuelDueDate": { "type": "string", "description": "Fuel due date" },
+        "fuelStatus": { "type": "string", "description": "Fuel status" },
+        "fuelDoneDate": { "type": "string", "description": "Fuel completion date" },
+        "fuelScheduleTime": { "type": "string", "description": "Fuel schedule time" },
+        "fuelQuota": { "type": "string", "description": "Fuel quota" },
+        "rowNumber": { "type": "number", "description": "Google Sheet row number" },
+        "updatedAt": { "type": "string", "description": "Update timestamp" }
+      },
+      "required": [
+        "id",
+        "noLambung",
+        "noPolisi",
+        "tipeKendaraan",
+        "department",
+        "statusOperasi",
+        "lastPmDate",
+        "nextPmDueDate",
+        "pmStatus"
+      ]
+    }
+  },
+  "firestore": {
+    "/vehicles/{vehicleId}": {
+      "schema": "Vehicle",
+      "description": "Collection of light vehicle monitoring assets and PM inspection records"
+    }
+  }
+}

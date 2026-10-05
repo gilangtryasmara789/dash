@@ -31,27 +31,27 @@ export const KpiSummaryCards: React.FC<KpiSummaryCardsProps> = ({
   ).length;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-6">
       {/* 1. Overdue Card */}
       <button
         type="button"
         onClick={() => onSelectTab(activeFilterTab === 'OVERDUE' ? 'ALL' : 'OVERDUE')}
-        className={`text-left p-4 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-red-300 ${
+        className={`text-left p-3 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-red-300 ${
           activeFilterTab === 'OVERDUE'
             ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
             : 'border-slate-200/90'
         }`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0 group-hover:scale-105 transition-transform">
-            <AlertCircle className="w-5 h-5 text-red-600" />
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0 group-hover:scale-105 transition-transform">
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
           </div>
-          <div>
-            <div className="text-xs sm:text-sm font-bold text-slate-800">Overdue</div>
-            <div className="text-[11px] text-slate-400 font-medium">Needs action</div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-slate-800 truncate">Overdue</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate hidden xs:block">Needs action</div>
           </div>
         </div>
-        <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <div className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight shrink-0 pl-1">
           {overdueCount}
         </div>
       </button>
@@ -60,22 +60,22 @@ export const KpiSummaryCards: React.FC<KpiSummaryCardsProps> = ({
       <button
         type="button"
         onClick={() => onSelectTab(activeFilterTab === 'TODAY' ? 'ALL' : 'TODAY')}
-        className={`text-left p-4 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-amber-300 ${
+        className={`text-left p-3 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-amber-300 ${
           activeFilterTab === 'TODAY'
             ? 'border-amber-500 ring-2 ring-amber-100 bg-amber-50/20'
             : 'border-slate-200/90'
         }`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 group-hover:scale-105 transition-transform">
-            <Calendar className="w-5 h-5 text-amber-600" />
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 group-hover:scale-105 transition-transform">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
           </div>
-          <div>
-            <div className="text-xs sm:text-sm font-bold text-slate-800">Due today</div>
-            <div className="text-[11px] text-slate-400 font-medium">Monitor now</div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-slate-800 truncate">Due today</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate hidden xs:block">Monitor now</div>
           </div>
         </div>
-        <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <div className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight shrink-0 pl-1">
           {dueTodayCount}
         </div>
       </button>
@@ -84,22 +84,22 @@ export const KpiSummaryCards: React.FC<KpiSummaryCardsProps> = ({
       <button
         type="button"
         onClick={() => onSelectTab(activeFilterTab === 'TOMORROW' ? 'ALL' : 'TOMORROW')}
-        className={`text-left p-4 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-indigo-300 ${
+        className={`text-left p-3 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-indigo-300 ${
           activeFilterTab === 'TOMORROW'
             ? 'border-indigo-500 ring-2 ring-indigo-100 bg-indigo-50/20'
             : 'border-slate-200/90'
         }`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 group-hover:scale-105 transition-transform">
-            <Clock className="w-5 h-5 text-indigo-600" />
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 group-hover:scale-105 transition-transform">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
           </div>
-          <div>
-            <div className="text-xs sm:text-sm font-bold text-slate-800">Due tomorrow</div>
-            <div className="text-[11px] text-slate-400 font-medium">H-1 reminder</div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-slate-800 truncate">Tomorrow</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate hidden xs:block">H-1 reminder</div>
           </div>
         </div>
-        <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <div className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight shrink-0 pl-1">
           {dueTomorrowCount}
         </div>
       </button>
@@ -108,22 +108,22 @@ export const KpiSummaryCards: React.FC<KpiSummaryCardsProps> = ({
       <button
         type="button"
         onClick={() => onSelectTab(activeFilterTab === 'UPCOMING' ? 'ALL' : 'UPCOMING')}
-        className={`text-left p-4 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-emerald-300 ${
+        className={`text-left p-3 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer shadow-xs flex items-center justify-between group hover:border-emerald-300 ${
           activeFilterTab === 'UPCOMING'
             ? 'border-emerald-500 ring-2 ring-emerald-100 bg-emerald-50/20'
             : 'border-slate-200/90'
         }`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-105 transition-transform">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
           </div>
-          <div>
-            <div className="text-xs sm:text-sm font-bold text-slate-800">Upcoming</div>
-            <div className="text-[11px] text-slate-400 font-medium">Next 30 days</div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-slate-800 truncate">Upcoming</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate hidden xs:block">Next 30 days</div>
           </div>
         </div>
-        <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+        <div className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight shrink-0 pl-1">
           {upcomingCount}
         </div>
       </button>

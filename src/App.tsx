@@ -19,6 +19,19 @@ import {
   syncAllVehiclesToGoogleSheet,
   flattenVehicleObligations,
 } from './services/googleSheetsService';
+import {
+  subscribeToVehicles,
+  saveVehicleToFirestore,
+  deleteVehicleFromFirestore,
+  syncAllVehiclesToFirestore,
+  signInWithGoogle,
+  signOutFirebase,
+  subscribeToAuth,
+  isUserAdmin,
+  testConnection,
+  checkAndSeedIfEmpty,
+} from './services/firebase';
+import { User } from 'firebase/auth';
 
 import { Header } from './components/Header';
 import { HeroBanner } from './components/HeroBanner';
@@ -87,6 +100,43 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     return localStorage.getItem(LOCAL_STORAGE_ADMIN_KEY) === 'true';
   });
+
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+
+  // Firestore Real-Time Synchronization & Auth Listener
+  useEffect(() => {
+    testConnection();
+
+    // 1. Auth state subscription
+    const unsubAuth = subscribeToAuth((user) => {
+      setFirebaseUser(user);
+      if (user && isUserAdmin(user)) {
+        setIsAdmin(true);
+      }
+      if (user) {
+        checkAndSeedIfEmpty().catch((err) =>
+          console.warn('Check seed on auth notice:', err)
+        );
+      }
+    });
+
+    // 2. Real-time vehicles sync from Firestore
+    const unsubVehicles = subscribeToVehicles(
+      (firestoreVehicles) => {
+        if (firestoreVehicles && firestoreVehicles.length > 0) {
+          setVehicles(firestoreVehicles);
+        }
+      },
+      (error) => {
+        console.warn('Firestore subscription status:', error);
+      }
+    );
+
+    return () => {
+      unsubAuth();
+      unsubVehicles();
+    };
+  }, []);
 
   const [toastMessage, setToastMessage] = useState<{
     text: string;
@@ -291,6 +341,9 @@ export default function App() {
       const result = await readDataFromGoogleSheet(currentToken, config.spreadsheetId);
       if (result.vehicles.length > 0) {
         setVehicles(result.vehicles);
+        syncAllVehiclesToFirestore(result.vehicles).catch((e) =>
+          console.warn('Firestore bulk sync notice:', e)
+        );
         const syncTime = new Date().toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
@@ -340,6 +393,9 @@ export default function App() {
 
         if (result.vehicles.length > 0) {
           setVehicles(result.vehicles);
+          syncAllVehiclesToFirestore(result.vehicles).catch((e) =>
+            console.warn('Firestore bulk sync notice:', e)
+          );
           showToast(
             `Loaded ${result.vehicles.length} fleet units from Google Sheet: "${spreadsheetName}"`,
             'success'
@@ -363,6 +419,11 @@ export default function App() {
       setVehicles((prev) =>
         prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v))
       );
+
+      // Save to Firebase Firestore real-time cloud
+      saveVehicleToFirestore(updatedVehicle).catch((err) => {
+        console.warn('Firestore update notice:', err);
+      });
 
       showToast(`Compliance obligation status for ${updatedVehicle.noLambung} updated successfully!`, 'success');
 
@@ -392,6 +453,12 @@ export default function App() {
         setVehicles((prev) =>
           prev.map((v) => (v.id === vehicleData.id ? vehicleData : v))
         );
+
+        // Save to Firebase Firestore
+        saveVehicleToFirestore(vehicleData).catch((err) => {
+          console.warn('Firestore update notice:', err);
+        });
+
         showToast(`Asset specifications for ${vehicleData.noLambung} updated`, 'success');
 
         const currentToken = token || getStoredToken();
@@ -415,6 +482,12 @@ export default function App() {
         };
 
         setVehicles((prev) => [newVehicle, ...prev]);
+
+        // Save new vehicle to Firebase Firestore
+        saveVehicleToFirestore(newVehicle).catch((err) => {
+          console.warn('Firestore insert notice:', err);
+        });
+
         showToast(`Light Vehicle ${newVehicle.noLambung} registered to fleet`, 'success');
 
         const currentToken = token || getStoredToken();
@@ -448,6 +521,11 @@ export default function App() {
       const remainingVehicles = vehicles.filter((v) => v.id !== vehicleId);
       setVehicles(remainingVehicles);
 
+      // Delete from Firebase Firestore
+      deleteVehicleFromFirestore(vehicleId).catch((err) => {
+        console.warn('Firestore delete notice:', err);
+      });
+
       showToast(
         `Unit ${targetVehicle?.noLambung || 'Light Vehicle'} decommissioned from fleet`,
         'info'
@@ -475,6 +553,33 @@ export default function App() {
     [vehicles, token, config, showToast]
   );
 
+  // Firebase Auth Handlers
+  const handleFirebaseSignIn = useCallback(async () => {
+    try {
+      const user = await signInWithGoogle();
+      setFirebaseUser(user);
+      if (isUserAdmin(user)) {
+        setIsAdmin(true);
+      }
+      showToast(`Welcome, ${user.displayName || user.email}! Connected to Cloud.`, 'success');
+    } catch (err: any) {
+      console.error('Sign-in error:', err);
+      if (err?.code !== 'auth/popup-closed-by-user') {
+        showToast('Google Sign-In was cancelled or failed.', 'info');
+      }
+    }
+  }, [showToast]);
+
+  const handleFirebaseSignOut = useCallback(async () => {
+    try {
+      await signOutFirebase();
+      setFirebaseUser(null);
+      showToast('Signed out from Cloud.', 'info');
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
+  }, [showToast]);
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 selection:bg-red-100 selection:text-red-900">
       {/* Toast Alert */}
@@ -499,7 +604,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Header matching user screenshot */}
+      {/* Top Header with Live Cloud Sync & Google Auth */}
       <Header
         isAdmin={isAdmin}
         onOpenAdminModal={() => setIsAdminModalOpen(true)}
@@ -512,30 +617,33 @@ export default function App() {
           setEditingVehicle(null);
           setIsAddVehicleOpen(true);
         }}
+        firebaseUser={firebaseUser}
+        onSignInGoogle={handleFirebaseSignIn}
+        onSignOutGoogle={handleFirebaseSignOut}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Hero Banner with Excavator loading haul truck and Red Curve Accent */}
         <HeroBanner />
 
         {/* Admin Control Banner (Only visible when Admin Mode is active) */}
         {isAdmin && (
-          <div className="mb-5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 shadow-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+          <div className="mb-4 sm:mb-5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
                 ADM
               </div>
               <div>
                 <span className="text-xs font-bold text-amber-950 block">
                   Fleet Administrator Mode Active
                 </span>
-                <span className="text-[11px] text-amber-800">
-                  Authorized permissions: Add new vehicles, modify technical specs, and decommission fleet units.
+                <span className="text-[11px] text-amber-800 block">
+                  Permissions: Add new vehicles, modify technical specs, and decommission units.
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 id="banner-add-vehicle-btn"
@@ -543,18 +651,18 @@ export default function App() {
                   setEditingVehicle(null);
                   setIsAddVehicleOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 text-emerald-400" />
-                <span>+ Add New Unit</span>
+                <span>+ Add Unit</span>
               </button>
               <button
                 type="button"
                 id="banner-manage-fleet-btn"
                 onClick={() => setIsAdminModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 font-semibold text-xs hover:bg-amber-100/70 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl bg-white border border-amber-300 text-amber-900 font-semibold text-xs hover:bg-amber-100/70 transition-colors cursor-pointer"
               >
-                <span>Manage Fleet / Decommission</span>
+                <span>Manage Fleet</span>
               </button>
             </div>
           </div>
@@ -571,32 +679,34 @@ export default function App() {
         <WeeklyPmReportCard vehicles={vehicles} />
 
         {/* View Switcher Bar (Tabs) */}
-        <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
-          <div className="flex items-center gap-2">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveMainView('OBLIGATIONS')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeMainView === 'OBLIGATIONS'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Obligations Register (PM, Comm, Fuel)</span>
+              <Calendar className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Obligations Register (PM, Comm, Fuel)</span>
+              <span className="sm:hidden">Obligations</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveMainView('FLEET')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeMainView === 'FLEET'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Fleet Inventory ({vehicles.length})</span>
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Fleet Inventory ({vehicles.length})</span>
+              <span className="sm:hidden">Fleet ({vehicles.length})</span>
             </button>
           </div>
 
