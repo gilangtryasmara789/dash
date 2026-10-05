@@ -812,6 +812,11 @@ export default function App() {
                   setDetailVehicle(vehicle);
                   setIsDetailOpen(true);
                 }}
+                isAdmin={isAdmin}
+                onEditVehicle={(vehicle) => {
+                  setEditingVehicle(vehicle);
+                  setIsAddVehicleOpen(true);
+                }}
               />
             ) : (
               /* View 2: Fleet Catalog & Detailed Specs Table */
@@ -907,6 +912,10 @@ export default function App() {
           setIsAddVehicleOpen(true);
         }}
         onRequestDeleteVehicle={handleRequestDelete}
+        onEditVehicle={(vehicle) => {
+          setEditingVehicle(vehicle);
+          setIsAddVehicleOpen(true);
+        }}
         onClearAllVehicles={handleClearAllVehicles}
         onLoadDemoVehicles={handleLoadDemoVehicles}
       />

@@ -13,6 +13,7 @@ import {
   Layers,
   Eye,
   EyeOff,
+  FileEdit,
 } from 'lucide-react';
 
 interface AdminLoginModalProps {
@@ -24,6 +25,7 @@ interface AdminLoginModalProps {
   vehicles: SaranaLV[];
   onOpenAddVehicle: () => void;
   onRequestDeleteVehicle: (vehicle: SaranaLV) => void;
+  onEditVehicle?: (vehicle: SaranaLV) => void;
   onClearAllVehicles?: () => void;
   onLoadDemoVehicles?: () => void;
 }
@@ -37,6 +39,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   vehicles,
   onOpenAddVehicle,
   onRequestDeleteVehicle,
+  onEditVehicle,
   onClearAllVehicles,
   onLoadDemoVehicles,
 }) => {
@@ -234,16 +237,32 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Action: Delete / Reduce Vehicle */}
-                      <button
-                        type="button"
-                        onClick={() => onRequestDeleteVehicle(vehicle)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-transparent rounded-lg transition-colors cursor-pointer shrink-0"
-                        title={`Decommission vehicle ${vehicle.noLambung}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Decommission</span>
-                      </button>
+                      {/* Actions: Edit & Delete / Reduce Vehicle */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {onEditVehicle && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleClose();
+                              onEditVehicle(vehicle);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                            title={`Edit jadwal & data ${vehicle.noLambung}`}
+                          >
+                            <FileEdit className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Edit</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => onRequestDeleteVehicle(vehicle)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-transparent rounded-lg transition-colors cursor-pointer shrink-0"
+                          title={`Decommission vehicle ${vehicle.noLambung}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}

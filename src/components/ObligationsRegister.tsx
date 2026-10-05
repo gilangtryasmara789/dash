@@ -20,6 +20,7 @@ import {
   FileSpreadsheet,
   User,
   MapPin,
+  FileEdit,
 } from 'lucide-react';
 
 interface ObligationsRegisterProps {
@@ -37,6 +38,8 @@ interface ObligationsRegisterProps {
   onSelectStatusTab: (tab: 'ALL' | 'OVERDUE' | 'TODAY' | 'TOMORROW' | 'UPCOMING' | 'COMPLETED') => void;
   onConfirmObligation: (item: VehicleObligationItem) => void;
   onViewVehicleDetail: (vehicle: SaranaLV) => void;
+  isAdmin?: boolean;
+  onEditVehicle?: (vehicle: SaranaLV) => void;
 }
 
 export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
@@ -54,6 +57,8 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
   onSelectStatusTab,
   onConfirmObligation,
   onViewVehicleDetail,
+  isAdmin = false,
+  onEditVehicle,
 }) => {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs mb-8">
@@ -321,8 +326,19 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
                     onClick={() => onViewVehicleDetail(item.vehicle)}
                     className="flex-1 py-2 px-3 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors text-center cursor-pointer min-h-[40px]"
                   >
-                    Detail Unit
+                    Detail
                   </button>
+                  {isAdmin && onEditVehicle && (
+                    <button
+                      type="button"
+                      onClick={() => onEditVehicle(item.vehicle)}
+                      className="py-2 px-3 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors text-center cursor-pointer min-h-[40px] flex items-center justify-center gap-1"
+                      title="Edit Armada & Jadwal"
+                    >
+                      <FileEdit className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Edit</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => onConfirmObligation(item)}
@@ -335,12 +351,12 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
                     {isDone ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>Selesai (Update)</span>
+                        <span>Selesai</span>
                       </>
                     ) : (
                       <>
                         <Send className="w-3.5 h-3.5" />
-                        <span>Konfirmasi PM</span>
+                        <span>Konfirmasi</span>
                       </>
                     )}
                   </button>
@@ -484,25 +500,38 @@ export const ObligationsRegister: React.FC<ObligationsRegisterProps> = ({
 
                     {/* ACTION */}
                     <td className="py-3.5 px-4 sm:px-6 text-right">
-                      {isDone ? (
-                        <button
-                          type="button"
-                          onClick={() => onConfirmObligation(item)}
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Done</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onConfirmObligation(item)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-300 rounded-lg shadow-2xs transition-colors cursor-pointer"
-                        >
-                          <Send className="w-3 h-3 text-teal-600" />
-                          <span>Confirm</span>
-                        </button>
-                      )}
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isAdmin && onEditVehicle && (
+                          <button
+                            type="button"
+                            onClick={() => onEditVehicle(item.vehicle)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                            title="Edit Jadwal & Spesifikasi Armada"
+                          >
+                            <FileEdit className="w-3.5 h-3.5 text-slate-500" />
+                            <span>Edit</span>
+                          </button>
+                        )}
+                        {isDone ? (
+                          <button
+                            type="button"
+                            onClick={() => onConfirmObligation(item)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 px-2.5 py-1 rounded-lg transition-colors cursor-pointer border border-emerald-200"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Done</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onConfirmObligation(item)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border border-teal-300 rounded-lg shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <Send className="w-3 h-3 text-teal-600" />
+                            <span>Confirm</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
