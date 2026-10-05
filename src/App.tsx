@@ -29,7 +29,7 @@ import {
   subscribeToAuth,
   isUserAdmin,
   testConnection,
-  checkAndSeedIfEmpty,
+  seedInitialVehicles,
 } from './services/firebase';
 import { User } from 'firebase/auth';
 
@@ -106,18 +106,11 @@ export default function App() {
     // 2. Real-time vehicles sync from Firestore (HP & Laptop stay in sync)
     const unsubVehicles = subscribeToVehicles(
       (firestoreVehicles) => {
-        if (firestoreVehicles && firestoreVehicles.length > 0) {
-          setVehicles(firestoreVehicles);
-        }
+        setVehicles(firestoreVehicles || []);
       },
       (error) => {
         console.warn('Firestore subscription status:', error);
       }
-    );
-
-    // 3. Ensure Firestore is seeded with data if collection was empty
-    checkAndSeedIfEmpty().catch((err) =>
-      console.warn('Check seed on mount notice:', err)
     );
 
     return () => {
@@ -537,6 +530,33 @@ export default function App() {
     [vehicles, token, config, showToast]
   );
 
+  // Clear all vehicles from the fleet (allow empty fleet)
+  const handleClearAllVehicles = useCallback(async () => {
+    if (!window.confirm('Yakin ingin menghapus seluruh armada dari database Cloud? Tindakan ini akan mengosongkan armada.')) {
+      return;
+    }
+    const currentList = [...vehicles];
+    setVehicles([]);
+    try {
+      await Promise.all(currentList.map((v) => deleteVehicleFromFirestore(v.id)));
+      showToast('Seluruh armada berhasil dikosongkan dari Cloud Firestore.', 'info');
+    } catch (err: any) {
+      console.error('Error clearing fleet:', err);
+      showToast(`Gagal mengosongkan armada: ${err.message}`, 'error');
+    }
+  }, [vehicles, showToast]);
+
+  // Load 6 demo units if admin desires
+  const handleLoadDemoVehicles = useCallback(async () => {
+    try {
+      await seedInitialVehicles();
+      showToast('Data demo armada (6 unit) berhasil dimuat ke Cloud Firestore!', 'success');
+    } catch (err: any) {
+      console.error('Error loading demo vehicles:', err);
+      showToast(`Gagal memuat demo: ${err.message}`, 'error');
+    }
+  }, [showToast]);
+
   // Firebase Auth Handlers
   const handleFirebaseSignIn = useCallback(async () => {
     try {
@@ -826,6 +846,8 @@ export default function App() {
           setIsAddVehicleOpen(true);
         }}
         onRequestDeleteVehicle={handleRequestDelete}
+        onClearAllVehicles={handleClearAllVehicles}
+        onLoadDemoVehicles={handleLoadDemoVehicles}
       />
 
       {/* 3. Add / Edit Vehicle Modal */}

@@ -24,6 +24,8 @@ interface AdminLoginModalProps {
   vehicles: SaranaLV[];
   onOpenAddVehicle: () => void;
   onRequestDeleteVehicle: (vehicle: SaranaLV) => void;
+  onClearAllVehicles?: () => void;
+  onLoadDemoVehicles?: () => void;
 }
 
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
@@ -35,6 +37,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   vehicles,
   onOpenAddVehicle,
   onRequestDeleteVehicle,
+  onClearAllVehicles,
+  onLoadDemoVehicles,
 }) => {
   if (!isOpen) return null;
 
@@ -133,43 +137,77 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 </button>
               </div>
 
-              {/* Action: Add New Vehicle Button */}
-              <div className="flex items-center justify-between gap-3 pt-1">
-                <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
-                  <Layers className="w-4 h-4 text-slate-500" />
-                  <span>Active Fleet Assets ({vehicles.length} units)</span>
+              {/* Action: Add New Vehicle and Clear Fleet */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 font-semibold">
+                    <Layers className="w-4 h-4 text-slate-500" />
+                    <span>Armada Aktif ({vehicles.length} unit)</span>
+                  </div>
+                  {vehicles.length > 0 && onClearAllVehicles && (
+                    <button
+                      type="button"
+                      onClick={onClearAllVehicles}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                      title="Hapus seluruh unit armada dari Cloud"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Kosongkan Armada</span>
+                    </button>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  id="admin-add-vehicle-btn"
-                  onClick={() => {
-                    handleClose();
-                    onOpenAddVehicle();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors shadow-xs cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 text-emerald-400" />
-                  <span>+ Register New Vehicle</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {vehicles.length === 0 && onLoadDemoVehicles && (
+                    <button
+                      type="button"
+                      onClick={onLoadDemoVehicles}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer"
+                    >
+                      <span>Muat Data Demo</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    id="admin-add-vehicle-btn"
+                    onClick={() => {
+                      handleClose();
+                      onOpenAddVehicle();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition-colors shadow-xs cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-emerald-400" />
+                    <span>+ Tambah Unit Baru</span>
+                  </button>
+                </div>
               </div>
 
               {/* Quick Search */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search vehicle to decommission (Fleet ID, Model, PIC)..."
-                  value={searchUnit}
-                  onChange={(e) => setSearchUnit(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
-                />
-              </div>
+              {vehicles.length > 0 && (
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari unit untuk dinonaktifkan (No Lambung, Model, Driver)..."
+                    value={searchUnit}
+                    onChange={(e) => setSearchUnit(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400"
+                  />
+                </div>
+              )}
 
               {/* Vehicle List with Delete/Remove Action */}
               <div className="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto divide-y divide-slate-100">
-                {filteredVehicles.length === 0 ? (
+                {vehicles.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-500">
+                    <Truck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="font-bold text-slate-800">Armada Saat Ini Kosong (0 Unit)</p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Klik <strong>+ Tambah Unit Baru</strong> untuk mendaftarkan sarana operasional Anda.
+                    </p>
+                  </div>
+                ) : filteredVehicles.length === 0 ? (
                   <div className="p-4 text-center text-xs text-slate-500">
-                    No vehicles matching search criteria.
+                    Tidak ada unit yang sesuai pencarian.
                   </div>
                 ) : (
                   filteredVehicles.map((vehicle) => (

@@ -144,16 +144,10 @@ export function subscribeToVehicles(
 
   return onSnapshot(
     vehiclesCol,
-    async (snapshot) => {
-      // If Firestore is empty on initial run, auto-seed with base data
+    (snapshot) => {
+      // If Firestore is empty (e.g. user emptied/deleted all fleet units), respect empty fleet
       if (snapshot.empty) {
-        try {
-          await seedInitialVehicles();
-          return;
-        } catch (seedErr) {
-          console.warn('Could not auto-seed to Firestore:', seedErr);
-        }
-        onData(INITIAL_LV_DATA);
+        onData([]);
         return;
       }
 
